@@ -1,0 +1,92 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="trophyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#E4B23C"/>
+    </linearGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c3f53c"/>
+      <stop offset="100%" stop-color="#1AA179"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background blobs -->
+  <circle cx="80" cy="100" r="50" fill="#c3f53c" opacity="0.06"/>
+  <circle cx="330" cy="300" r="60" fill="#fbbf24" opacity="0.06"/>
+  <circle cx="340" cy="80" r="35" fill="#1AA179" opacity="0.08"/>
+
+  <!-- Trophy -->
+  <g transform="translate(200,150)">
+    <!-- Trophy cup -->
+    <path d="M-30,-50 L-25,10 Q0,30 25,10 L30,-50 Z" fill="url(#trophyGrad)" stroke="#92400E" stroke-width="1.5"/>
+    <!-- Cup shine -->
+    <path d="M-20,-45 L-18,5 Q0,15 10,5 L12,-45 Z" fill="white" opacity="0.2"/>
+    <!-- Left handle -->
+    <path d="M-30,-35 Q-55,-30 -50,-10 Q-45,5 -28,0" fill="none" stroke="#E4B23C" stroke-width="5" stroke-linecap="round"/>
+    <!-- Right handle -->
+    <path d="M30,-35 Q55,-30 50,-10 Q45,5 28,0" fill="none" stroke="#E4B23C" stroke-width="5" stroke-linecap="round"/>
+    <!-- Base -->
+    <rect x="-8" y="10" width="16" height="20" rx="2" fill="#92400E"/>
+    <!-- Base plate -->
+    <rect x="-22" y="28" width="44" height="10" rx="4" fill="#92400E"/>
+    <!-- Star on trophy -->
+    <polygon points="0,-30 4,-18 16,-18 6,-10 10,2 0,-6 -10,2 -6,-10 -16,-18 -4,-18" fill="#0A2540" opacity="0.3"/>
+  </g>
+
+  <!-- Progress ring left -->
+  <g transform="translate(90,180)">
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#1a1a24" stroke-width="8"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="url(#ringGrad)" stroke-width="8" 
+            stroke-dasharray="188" stroke-dashoffset="50" stroke-linecap="round"
+            transform="rotate(-90)">
+      <animate attributeName="stroke-dashoffset" from="188" to="50" dur="1.5s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+    </circle>
+    <text x="0" y="5" text-anchor="middle" font-family="Space Grotesk" font-size="18" font-weight="700" fill="#c3f53c">75%</text>
+  </g>
+
+  <!-- Progress ring right -->
+  <g transform="translate(310,200)">
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#1a1a24" stroke-width="6"/>
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#E4B23C" stroke-width="6" 
+            stroke-dasharray="141" stroke-dashoffset="28" stroke-linecap="round"
+            transform="rotate(-90)">
+      <animate attributeName="stroke-dashoffset" from="141" to="28" dur="1.5s" fill="freeze" begin="0.3s"/>
+    </circle>
+    <text x="0" y="5" text-anchor="middle" font-family="Space Grotesk" font-size="14" font-weight="700" fill="#E4B23C">80%</text>
+  </g>
+
+  <!-- XP stars -->
+  <g fill="#c3f53c" opacity="0.7">
+    <polygon points="140,120 143,128 152,128 145,133 147,142 140,137 133,142 135,133 128,128 137,128">
+      <animateTransform attributeName="transform" type="scale" values="1;1.2;1" dur="2s" repeatCount="indefinite" additive="sum"/>
+    </polygon>
+    <polygon points="280,130 282,136 288,136 283,140 285,146 280,142 275,146 277,140 272,136 278,136" opacity="0.5">
+      <animateTransform attributeName="transform" type="scale" values="1;1.3;1" dur="2.5s" repeatCount="indefinite" additive="sum"/>
+    </polygon>
+  </g>
+
+  <!-- Streak fire -->
+  <g transform="translate(200,280)">
+    <text x="0" y="0" text-anchor="middle" font-size="40">🔥</text>
+    <text x="0" y="35" text-anchor="middle" font-family="Space Grotesk" font-size="22" font-weight="800" fill="#fbbf24">12 Day Streak!</text>
+  </g>
+
+  <!-- Floating particles -->
+  <circle cx="120" cy="280" r="4" fill="#c3f53c" opacity="0.4">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-12;0,0" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="300" cy="100" r="5" fill="#E4B23C" opacity="0.3">
+    <animateTransform attributeName="transform" type="translate" values="0,0;6,0;0,0" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <rect x="70" y="250" width="12" height="12" rx="3" fill="#1AA179" opacity="0.3" transform="rotate(30 76 256)">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,8;0,0" dur="3.5s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Title -->
+  <text x="200" y="345" text-anchor="middle" font-family="Space Grotesk" font-size="26" font-weight="700" fill="#f0f0f5">
+    Gamified Education
+  </text>
+  <text x="200" y="372" text-anchor="middle" font-family="Nunito" font-size="13" fill="#8b8b9e">
+    Earn XP, build streaks, level up 🚀
+  </text>
+</svg>

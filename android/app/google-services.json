@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "209273531390",
+    "project_id": "htoochoon-l0l",
+    "storage_bucket": "htoochoon-l0l.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:209273531390:android:910165ee3a10dbedd42eaf",
+        "android_client_info": {
+          "package_name": "site.kargate.test.htoochoon"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtOJnCmw-6cDPMvjpv2CVC7CRDksj6mwM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,22 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="topBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+    <filter id="topGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="60" cy="60" r="55" fill="#1a1a24" stroke="url(#topBadge)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="45" fill="none" stroke="#2dd4bf" stroke-width="1" opacity="0.3"/>
+  <!-- Star -->
+  <g transform="translate(60,46)" filter="url(#topGlow)">
+    <polygon points="0,-24 6,-8 22,-8 9,2 14,18 0,10 -14,18 -9,2 -22,-8 -6,-8" fill="url(#topBadge)"/>
+    <!-- Inner star shine -->
+    <polygon points="0,-14 3,-5 12,-5 5,1 8,10 0,5 -8,10 -5,1 -12,-5 -3,-5" fill="white" opacity="0.15"/>
+  </g>
+  <!-- Crown above star -->
+  <g transform="translate(60,16)">
+    <path d="M-12,0 L-8,-10 L0,-4 L8,-10 L12,0 Z" fill="#2dd4bf" opacity="0.7"/>
+  </g>
+  <text x="60" y="88" text-anchor="middle" font-family="Space Grotesk" font-size="7" font-weight="700" fill="#2dd4bf" letter-spacing="1">TOP PERFORMER</text>
+</svg>

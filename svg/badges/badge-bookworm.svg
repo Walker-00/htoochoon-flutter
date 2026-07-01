@@ -1,0 +1,24 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bookBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <filter id="bookGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="60" cy="60" r="55" fill="#1a1a24" stroke="url(#bookBadge)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="45" fill="none" stroke="#38bdf8" stroke-width="1" opacity="0.3"/>
+  <!-- Open book -->
+  <g transform="translate(60,48)" filter="url(#bookGlow)">
+    <path d="M-20,-12 Q-25,-15 -25,0 L-25,15 L0,18 L0,-8 Z" fill="#38bdf8" opacity="0.8"/>
+    <path d="M20,-12 Q25,-15 25,0 L25,15 L0,18 L0,-8 Z" fill="#38bdf8"/>
+    <!-- Page lines -->
+    <line x1="-20" y1="0" x2="-5" y2="-2" stroke="white" stroke-width="1" opacity="0.3"/>
+    <line x1="-18" y1="5" x2="-5" y2="3" stroke="white" stroke-width="1" opacity="0.25"/>
+    <line x1="5" y1="-2" x2="20" y2="0" stroke="white" stroke-width="1" opacity="0.3"/>
+    <line x1="5" y1="3" x2="18" y2="5" stroke="white" stroke-width="1" opacity="0.25"/>
+    <!-- Pages turning -->
+    <path d="M0,-8 Q10,-10 8,-2 L0,2 Z" fill="#7dd3fc" opacity="0.4"/>
+  </g>
+  <text x="60" y="88" text-anchor="middle" font-family="Space Grotesk" font-size="10" font-weight="700" fill="#38bdf8">BOOKWORM</text>
+</svg>

@@ -1,0 +1,29 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Empty State: All Caught Up (Notifications) -->
+  <circle cx="60" cy="60" r="30" fill="#c3f53c" opacity="0.06"/>
+  <circle cx="350" cy="240" r="35" fill="#1AA179" opacity="0.05"/>
+
+  <g transform="translate(200,120)">
+    <!-- Bell body -->
+    <path d="M-30,10 Q-35,-20 0,-35 Q35,-20 30,10 L35,20 L-35,20 Z" fill="#1a1a24" stroke="#c3f53c" stroke-width="2.5"/>
+    <!-- Bell clapper -->
+    <circle cx="0" cy="28" r="6" fill="#c3f53c"/>
+    <!-- Bell shine -->
+    <path d="M-12,-25 Q-8,-32 0,-30" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
+    <!-- Checkmark on bell -->
+    <path d="M-8,0 L-2,7 L10,-8" fill="none" stroke="#c3f53c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Zzz (sleeping/relaxed) -->
+    <text x="40" y="-10" font-family="Space Grotesk" font-size="14" font-weight="700" fill="#c3f53c" opacity="0.4">z</text>
+    <text x="50" y="-20" font-family="Space Grotesk" font-size="18" font-weight="700" fill="#c3f53c" opacity="0.3">z</text>
+    <text x="62" y="-32" font-family="Space Grotesk" font-size="22" font-weight="700" fill="#c3f53c" opacity="0.2">z</text>
+  </g>
+
+  <!-- Relaxed vibes — gentle floating elements -->
+  <circle cx="120" cy="90" r="5" fill="#c3f53c" opacity="0.2">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="290" cy="100" r="4" fill="#1AA179" opacity="0.25">
+    <animateTransform attributeName="transform" type="translate" values="0,0;4,0;0,0" dur="3.5s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M100,200 l3,-8 3,8 8,3 -8,3 -3,8 -3,-8 -8,-3z" fill="#E4B23C" opacity="0.15"/>
+</svg>

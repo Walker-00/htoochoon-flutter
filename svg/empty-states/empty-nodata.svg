@@ -1,0 +1,44 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Empty State: No Data Yet -->
+  <defs>
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a24"/>
+      <stop offset="100%" stop-color="#12121a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Decorative circles -->
+  <circle cx="60" cy="50" r="30" fill="#c3f53c" opacity="0.06"/>
+  <circle cx="350" cy="250" r="40" fill="#1AA179" opacity="0.05"/>
+
+  <!-- Open box -->
+  <g transform="translate(200,140)">
+    <!-- Box back -->
+    <rect x="-55" y="-20" width="110" height="70" rx="8" fill="url(#boxGrad)" stroke="#333" stroke-width="1.5"/>
+    <!-- Box lid (open, tilted) -->
+    <path d="M-55,-20 L-65,-50 L65,-50 L55,-20" fill="#1a1a24" stroke="#333" stroke-width="1.5"/>
+    <!-- Box front flap -->
+    <path d="M-55,50 L-50,60 L50,60 L55,50" fill="#12121a" stroke="#333" stroke-width="1.5"/>
+    <!-- Inside of box -->
+    <rect x="-48" y="-15" width="96" height="60" rx="4" fill="#0a0a0f"/>
+    <!-- Lime sparkle from box -->
+    <path d="M0,-30 l4,-14 4,14 14,4 -14,4 -4,14 -4,-14 -14,-4z" fill="#c3f53c" opacity="0.6">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;0,-5;0,0" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <!-- Small sparkles -->
+    <circle cx="-20" cy="-35" r="3" fill="#c3f53c" opacity="0.4">
+      <animate attributeName="opacity" values="0.4;0.8;0.4" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="25" cy="-40" r="2" fill="#E4B23C" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Floating shapes -->
+  <polygon points="100,80 110,60 120,80" fill="#c3f53c" opacity="0.2">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-6;0,0" dur="3s" repeatCount="indefinite"/>
+  </polygon>
+  <circle cx="310" cy="90" r="6" fill="#E4B23C" opacity="0.3"/>
+  <rect x="80" y="200" width="10" height="10" rx="2" fill="#1AA179" opacity="0.2" transform="rotate(20 85 205)"/>
+</svg>

@@ -1,0 +1,107 @@
+# Flutter / Dart
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+# pubspec.lock  # keep tracked for app projects (Flutter recommendation)
+*.iml
+
+# Generated code (build_runner outputs are regenerated)
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/build/
+android/captures/
+android/local.properties
+android/gradlew
+android/gradlew.bat
+android/**/GeneratedPluginRegistrant.java
+android/**/*.keystore
+android/**/*.jks
+android/key.properties
+android/.cxx/
+
+# iOS
+ios/.symlinks/
+ios/Pods/
+ios/Podfile.lock
+ios/Flutter/.last_build_id
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.framework
+ios/Flutter/engine/
+ios/Flutter/flutter_export_environment.sh
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+windows/flutter/ephemeral/
+
+*/target
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+linux/flutter/ephemeral/
+
+# Web
+web/.last_build_id
+
+# Firebase Admin service-account keys — contain a private key, never commit
+*firebase-adminsdk*.json
+**/firebase-admin*.json
+
+# Built APKs / app bundles / binaries (use CI artifacts instead)
+*.apk
+*.aab
+*.ipa
+*.app
+*.exe
+*.dmg
+*.msix
+
+# Media / screenshots dumped at root (not app assets)
+/*.jpg
+/*.jpeg
+/*.png
+/*.mp3
+/*.mp4
+/*.wav
+
+# Temp / scratch files
+*.log
+/*.txt
+!/LICENSE
+
+# Claude / AI tool ephemeral state
+.claude/scheduled_tasks.lock
+
+# DevTools
+devtools_options.yaml
+
+# Misc generated
+docs-json.json
+**/.qwen/
+/google-services.json

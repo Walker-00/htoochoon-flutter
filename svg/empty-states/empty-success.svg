@@ -1,0 +1,59 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c3f53c"/>
+      <stop offset="100%" stop-color="#1AA179"/>
+    </linearGradient>
+    <filter id="successGlow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Celebration confetti -->
+  <g opacity="0.6">
+    <rect x="80" y="40" width="8" height="8" rx="2" fill="#c3f53c" transform="rotate(25 84 44)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-10,30" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="300" y="50" width="6" height="6" rx="1" fill="#E4B23C" transform="rotate(-15 303 53)">
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,25" dur="2.5s" repeatCount="indefinite"/>
+    </rect>
+    <circle cx="120" cy="60" r="4" fill="#1AA179">
+      <animateTransform attributeName="transform" type="translate" values="0,0;-5,35" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="280" cy="40" r="3" fill="#ff6b6b">
+      <animateTransform attributeName="transform" type="translate" values="0,0;12,40" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <polygon points="150,30 153,24 156,30 162,30 157,34 159,40 153,36 147,40 149,34 144,30" fill="#fbbf24">
+      <animateTransform attributeName="transform" type="translate" values="0,0;0,40" dur="2.8s" repeatCount="indefinite"/>
+    </polygon>
+    <polygon points="250,50 252,45 254,50 259,50 255,53 256,58 252,55 248,58 249,53 245,50" fill="#c3f53c" opacity="0.5">
+      <animateTransform attributeName="transform" type="translate" values="0,0;5,35" dur="2.3s" repeatCount="indefinite"/>
+    </polygon>
+  </g>
+
+  <!-- Success checkmark -->
+  <g transform="translate(200,130)">
+    <!-- Glow circle -->
+    <circle cx="0" cy="0" r="55" fill="#c3f53c" opacity="0.08" filter="url(#successGlow)"/>
+    <!-- Outer ring -->
+    <circle cx="0" cy="0" r="48" fill="none" stroke="url(#checkGrad)" stroke-width="4" stroke-linecap="round"
+            stroke-dasharray="301" stroke-dashoffset="301">
+      <animate attributeName="stroke-dashoffset" to="0" dur="0.8s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+    </circle>
+    <!-- Checkmark -->
+    <path d="M-16,2 L-5,13 L18,-12" fill="none" stroke="#c3f53c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+          stroke-dasharray="50" stroke-dashoffset="50">
+      <animate attributeName="stroke-dashoffset" to="0" dur="0.4s" fill="freeze" begin="0.5s"/>
+    </path>
+  </g>
+
+  <!-- Sparkles around checkmark -->
+  <g fill="#c3f53c">
+    <path d="M130,100 l3,-8 3,8 8,3 -8,3 -3,8 -3,-8 -8,-3z" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M270,90 l2,-6 2,6 6,2 -6,2 -2,6 -2,-6 -6,-2z" opacity="0.4"/>
+    <path d="M290,160 l2,-5 2,5 5,2 -5,2 -2,5 -2,-5 -5,-2z" opacity="0.3"/>
+  </g>
+</svg>

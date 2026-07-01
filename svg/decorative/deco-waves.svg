@@ -1,0 +1,5 @@
+<svg viewBox="0 0 800 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+  <!-- Wave separator -->
+  <path d="M0,60 C200,120 400,0 600,60 C700,90 750,40 800,60 L800,120 L0,120 Z" fill="#0a0a0f" opacity="0.6"/>
+  <path d="M0,80 C150,40 350,100 500,70 C650,40 750,80 800,60 L800,120 L0,120 Z" fill="#0a0a0f"/>
+</svg>

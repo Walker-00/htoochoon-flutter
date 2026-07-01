@@ -1,0 +1,30 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Abstract geometric decorative shapes -->
+  <defs>
+    <linearGradient id="geoGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c3f53c" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#1AA179" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <!-- Large circle -->
+  <circle cx="120" cy="120" r="80" fill="none" stroke="#c3f53c" stroke-width="1.5" opacity="0.12"/>
+  <!-- Medium circle -->
+  <circle cx="280" cy="200" r="60" fill="none" stroke="#1AA179" stroke-width="1" opacity="0.1"/>
+  <!-- Small filled circle -->
+  <circle cx="320" cy="100" r="20" fill="#c3f53c" opacity="0.06"/>
+  <!-- Triangle -->
+  <polygon points="200,80 250,180 150,180" fill="none" stroke="#E4B23C" stroke-width="1.5" opacity="0.1"/>
+  <!-- Square -->
+  <rect x="80" y="260" width="60" height="60" rx="8" fill="none" stroke="#c3f53c" stroke-width="1" opacity="0.08" transform="rotate(15 110 290)"/>
+  <!-- Diamond -->
+  <polygon points="300,280 330,310 300,340 270,310" fill="#1AA179" opacity="0.06"/>
+  <!-- Cross -->
+  <g transform="translate(160,340)" opacity="0.1">
+    <rect x="-2" y="-15" width="4" height="30" rx="2" fill="#c3f53c"/>
+    <rect x="-15" y="-2" width="30" height="4" rx="2" fill="#c3f53c"/>
+  </g>
+  <!-- Dots -->
+  <circle cx="50" cy="200" r="4" fill="#E4B23C" opacity="0.15"/>
+  <circle cx="360" cy="320" r="3" fill="#c3f53c" opacity="0.2"/>
+  <circle cx="350" cy="50" r="5" fill="#1AA179" opacity="0.12"/>
+</svg>

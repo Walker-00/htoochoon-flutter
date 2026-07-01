@@ -1,0 +1,12 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Favicon: simplified peacock eye (3-ring pattern) on teal rounded rect -->
+  <rect width="32" height="32" rx="6" fill="#0B6E74"/>
+  <!-- Outer ring -->
+  <circle cx="16" cy="16" r="10" fill="none" stroke="white" stroke-width="1.5" opacity="0.9"/>
+  <!-- Middle ring -->
+  <circle cx="16" cy="16" r="6.5" fill="#E4B23C"/>
+  <!-- Inner dot -->
+  <circle cx="16" cy="16" r="3" fill="#0A2540"/>
+  <!-- Tiny shine -->
+  <circle cx="14" cy="14" r="1" fill="white" opacity="0.4"/>
+</svg>

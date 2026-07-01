@@ -1,0 +1,26 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Empty State: No Search Results -->
+  <circle cx="60" cy="50" r="25" fill="#c3f53c" opacity="0.06"/>
+  <circle cx="350" cy="250" r="35" fill="#1AA179" opacity="0.05"/>
+
+  <g transform="translate(200,130)">
+    <!-- Magnifying glass -->
+    <circle cx="0" cy="0" r="45" fill="none" stroke="#333" stroke-width="5"/>
+    <circle cx="0" cy="0" r="45" fill="#1a1a24" opacity="0.5"/>
+    <!-- Glass shine -->
+    <path d="M-15,-20 Q-5,-30 10,-25" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.2"/>
+    <!-- Handle -->
+    <line x1="32" y1="32" x2="58" y2="58" stroke="#333" stroke-width="8" stroke-linecap="round"/>
+    <!-- Question mark inside glass -->
+    <text x="0" y="12" text-anchor="middle" font-family="Space Grotesk" font-size="40" font-weight="700" fill="#c3f53c" opacity="0.6">?</text>
+  </g>
+
+  <!-- Floating dots -->
+  <circle cx="120" cy="100" r="4" fill="#c3f53c" opacity="0.3">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-8;0,0" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="300" cy="80" r="3" fill="#E4B23C" opacity="0.4">
+    <animateTransform attributeName="transform" type="translate" values="0,0;5,0;0,0" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <polygon points="330,160 336,148 342,160" fill="#1AA179" opacity="0.25"/>
+</svg>

@@ -1,0 +1,65 @@
+name: Deploy release files
+description: >
+  Upload everything staged in ./release to the server over HTTPS (through
+  Cloudflare) using the hidden, key-gated chunked uploader on the backend.
+  This sidesteps the upstream IP filtering that breaks direct SSH to the origin,
+  and chunking sidesteps Cloudflare's 100MB request-body cap.
+
+inputs:
+  base_url:
+    description: Backend base URL (Cloudflare-fronted), e.g. https://backend.htoochoon.com
+    required: true
+  key:
+    description: Long random release-upload key (matches RELEASE_UPLOAD_KEY on the server)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # bash on every OS (windows-latest ships Git Bash). split + curl are present
+    # on all three runner OSes.
+    - shell: bash
+      env:
+        BASE_URL: ${{ inputs.base_url }}
+        KEY: ${{ inputs.key }}
+      run: |
+        set -u
+        BASE="${BASE_URL%/}"
+        if [ -z "$KEY" ]; then echo "::error::release-upload key is empty"; exit 1; fi
+        shopt -s nullglob
+        uploaded=""
+        for f in release/*; do
+          [ -f "$f" ] || continue
+          name="$(basename "$f")"
+          tmp="$(mktemp -d)"
+          # 16MB chunks — small enough that nginx only needs ~20m on the upload
+          # route (not 100m), and a dropped chunk re-sends little. Default alpha
+          # suffixes (part.aa, part.ab, …) sort correctly on GNU and BSD split.
+          split -b 16777216 "$f" "$tmp/part."
+          i=0
+          for part in "$tmp"/part.*; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' \
+              --retry 6 --retry-delay 5 --retry-all-errors \
+              -X PUT -H "x-release-key: $KEY" \
+              -H 'Content-Type: application/octet-stream' \
+              --data-binary @"$part" \
+              "$BASE/god/release/part?name=$name&index=$i")"
+            if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+              echo "::error::Upload of $name part $i failed (HTTP $code)"
+              rm -rf "$tmp"; exit 1
+            fi
+            i=$((i + 1))
+          done
+          resp="$(curl -sS --retry 6 --retry-delay 5 --retry-all-errors \
+            -X POST -H "x-release-key: $KEY" -H 'Content-Type: application/json' \
+            --data "{\"name\":\"$name\",\"parts\":$i}" \
+            "$BASE/god/release/commit")"
+          rm -rf "$tmp"
+          case "$resp" in
+            *'"ok":true'*) echo "  $name → $resp" ;;
+            *) echo "::error::Commit failed for $name: $resp"; exit 1 ;;
+          esac
+          uploaded="$uploaded $name"
+        done
+        if [ -z "$uploaded" ]; then echo "::error::Nothing in ./release to upload"; exit 1; fi
+        echo "Uploaded:$uploaded"

@@ -1,0 +1,113 @@
+import 'package:flutter/material.dart';
+
+import 'package:htoochoon_flutter/core/log/app_logger.dart';
+import 'package:htoochoon_flutter/Notificaton/notification_center_screen.dart';
+import 'package:htoochoon_flutter/Screens/Deatiled_Screens/program_chat_screen.dart';
+import 'package:htoochoon_flutter/Screens/Discussion/dm_thread_screen.dart';
+import 'package:htoochoon_flutter/Screens/Discussion/discussion_thread_screen.dart';
+
+/// Central dispatcher: turns a notification payload (FCM `data`, a local-notif
+/// tap payload, or an in-app notification row) into a navigation.
+///
+/// Payload contract (all values may arrive as strings from FCM `data`):
+/// ```json
+/// { "type": "chat_mention", "screen": "chat",
+///   "params": { "programId": "...", "programName": "..." } }
+/// ```
+/// `params` may also be flattened onto the top level (FCM `data` can't nest),
+/// so both `data['params']['programId']` and `data['programId']` are accepted.
+///
+/// Unknown/[]missing types fall back to the Notification Center so a tap is
+/// never a dead end.
+class NotificationRouter {
+  NotificationRouter._();
+  static final NotificationRouter instance = NotificationRouter._();
+
+  final _log = const AppLog('NotificationRouter');
+  GlobalKey<NavigatorState>? _navKey;
+
+  void attach(GlobalKey<NavigatorState> navKey) => _navKey = navKey;
+
+  /// Route from any notification payload. Safe to call before the navigator is
+  /// mounted — it defers to the next frame.
+  void route(Map<String, dynamic>? data) {
+    if (data == null || data.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _dispatch(data));
+  }
+
+  void _dispatch(Map<String, dynamic> data) {
+    final nav = _navKey?.currentState;
+    if (nav == null) {
+      _log.w('navigator not ready, dropping notification route: $data');
+      return;
+    }
+
+    final type = (data['type'] ?? data['screen'] ?? '').toString();
+    final p = _params(data);
+    _log.i('routing notification type=$type');
+
+    switch (type) {
+      case 'chat_mention':
+      case 'chat':
+      case 'chat_message':
+        final programId = _str(p, 'programId');
+        if (programId != null) {
+          nav.push(MaterialPageRoute(
+            builder: (_) => ProgramChatScreen(
+              programId: programId,
+              programName: _str(p, 'programName') ?? 'Chat',
+            ),
+          ));
+          return;
+        }
+        break;
+      case 'dm':
+      case 'direct_message':
+        final peerId = _str(p, 'peerId') ?? _str(p, 'senderId');
+        if (peerId != null) {
+          nav.push(MaterialPageRoute(
+            builder: (_) => DmThreadScreen(
+              peerId: peerId,
+              peerName: _str(p, 'peerName') ?? _str(p, 'senderName') ?? 'Message',
+            ),
+          ));
+          return;
+        }
+        break;
+      case 'discussion':
+      case 'qa':
+      case 'discussion_reply':
+      case 'discussion_mention':
+        final discussionId = _str(p, 'discussionId');
+        if (discussionId != null) {
+          nav.push(MaterialPageRoute(
+            builder: (_) => DiscussionThreadScreen(discussionId: discussionId),
+          ));
+          return;
+        }
+        break;
+      // Other types (assignment_grade, session_live, submission_returned,
+      // material_new, exam_alert …) land in the center until their target
+      // screens accept id-only construction. Extend cases here as screens gain
+      // lightweight (id-based) constructors.
+    }
+
+    nav.push(MaterialPageRoute(
+      builder: (_) => const NotificationCenterScreen(),
+    ));
+  }
+
+  /// Accept nested `params` or a flat payload.
+  Map<String, dynamic> _params(Map<String, dynamic> data) {
+    final raw = data['params'];
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return data;
+  }
+
+  String? _str(Map<String, dynamic> m, String k) {
+    final v = m[k];
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+}

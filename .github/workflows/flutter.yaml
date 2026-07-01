@@ -1,0 +1,546 @@
+name: Flutter Multi Platform Build
+
+# Builds Android + Linux + Windows + macOS + iOS + Web.
+# Each job stages a clean-named binary in ./release and pushes it over SSH to
+# root@72.60.232.77:/htoochoon-releases/latest/ (composite action handles the
+# edge-throttle backoff). Served at https://backend.htoochoon.com/download/latest/<file>
+#
+# Real installers/binaries (no zip wrappers):
+#   Android : htoochoon.apk (universal) + per-abi apks + htoochoon.aab
+#   Windows : htoochoon.exe (Inno Setup installer)
+#   macOS   : htoochoon.dmg
+#   iOS     : htoochoon.ipa (unsigned)
+#   Linux   : htoochoon-linux-x64.tar.gz  (bundle dir — no single-file format)
+#   Web     : htoochoon-web.tar.gz        (static dir — no single-file format)
+#
+# SECRET: `secrets.RELEASE_UPLOAD_KEY` — long random key matching RELEASE_UPLOAD_KEY
+#   on the backend; gates the hidden chunked uploader (uploads go via Cloudflare).
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+env:
+  FLUTTER_VERSION: "3.44.2"
+  PUB_CACHE: ~/.pub-cache
+  # Release uploads go over HTTPS through Cloudflare to the hidden key-gated
+  # uploader (bypasses upstream IP filtering on the origin's SSH ports).
+  RELEASE_BASE_URL: "https://backend.htoochoon.com"
+
+
+jobs:
+
+# ============================================================
+# Analyze
+# ============================================================
+
+  analyze:
+    name: Analyze Flutter Project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-
+
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Flutter analyze
+        continue-on-error: true
+        run: flutter analyze
+
+
+# ============================================================
+# Android  ->  htoochoon.apk + per-abi apks + htoochoon.aab
+# ============================================================
+
+  android:
+    name: Android APK
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build split APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build universal APK
+        run: flutter build apk --release
+
+      - name: Stage clean-named artifacts
+        run: |
+          mkdir -p release
+          apk=build/app/outputs/flutter-apk
+          cp "$apk/app-release.apk"            release/htoochoon.apk
+          cp "$apk/app-arm64-v8a-release.apk"  release/htoochoon-arm64-v8a.apk
+          cp "$apk/app-armeabi-v7a-release.apk" release/htoochoon-armeabi-v7a.apk
+          cp "$apk/app-x86_64-release.apk"     release/htoochoon-x86_64.apk
+          ls -la release
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# Linux  ->  htoochoon-linux-x64.tar.gz
+# ============================================================
+
+  linux:
+    name: Linux Desktop
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install Linux build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libgstreamer1.0-dev \
+            libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
+            libsecret-1-dev
+
+      - run: flutter config --enable-linux-desktop
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build Linux
+        run: flutter build linux --release
+
+      - name: Package
+        run: |
+          mkdir -p release
+          tar -czf release/htoochoon-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# Windows  ->  htoochoon.exe  (Inno Setup installer)
+# `windows-latest` has full VS Community — ATL included, no extra install.
+# ============================================================
+
+  windows:
+    name: Windows Desktop
+    needs: analyze
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter config --enable-windows-desktop
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # flutter_webrtc downloads libwebrtc.zip during the build; CMake 3.28+
+      # refuses to extract an archive through a SYMLINK. This first build
+      # materializes Flutter's plugin symlinks then FAILS at the webrtc extract
+      # — that's expected. We then convert the symlinks to junctions (which are
+      # NOT symlinks, so the extract passes) and run a real, complete build.
+      # NOTE: don't use `--config-only` here — after it, the final build skips
+      # the CMake INSTALL step and ships a broken bundle (exe only, no DLLs/data).
+      - name: Materialize plugin symlinks (first build fails at webrtc extract — expected)
+        shell: pwsh
+        continue-on-error: true
+        run: flutter build windows --release
+
+      - name: Convert plugin symlinks to junctions
+        shell: pwsh
+        run: |
+          $dir = "windows/flutter/ephemeral/.plugin_symlinks"
+          if (!(Test-Path $dir)) { Write-Host "ERROR: .plugin_symlinks not created by first build"; exit 1 }
+          Get-ChildItem $dir | Where-Object { $_.LinkType } | ForEach-Object {
+            $target = $_.Target
+            if ($target -is [array]) { $target = $target[0] }
+            if (![IO.Path]::IsPathRooted($target)) {
+              $target = [IO.Path]::GetFullPath((Join-Path $_.Parent.FullName $target))
+            }
+            $path = $_.FullName
+            Remove-Item $path -Force
+            cmd /c mklink /J `"$path`" `"$target`" | Out-Null
+            Write-Host "Junction: $($_.Name) -> $target"
+          }
+
+      - name: Build Windows (complete bundle)
+        run: flutter build windows --release
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+      # flutter build links the exe but the complete runtime (flutter_windows.dll,
+      # data\icudtl.dat, flutter_assets, plugin DLLs) isn't always next to it in
+      # CI. cmake --install assembles a COMPLETE bundle — but on Windows it lands
+      # in C:\Program Files\<app> by default and Flutter's generated CMake can
+      # force-pin that prefix (so --prefix may be ignored). So: install, then
+      # DETECT wherever the complete bundle actually is, and package from there.
+      - name: Assemble & locate complete bundle
+        shell: pwsh
+        run: |
+          # Try to install into a clean staging dir first.
+          $stage = "$PWD\dist-win"
+          if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+          cmake --install build\windows\x64 --config Release --prefix $stage 2>&1 | Out-Host
+
+          # Candidate bundle locations, in priority order.
+          $candidates = @(
+            $stage,
+            "build\windows\x64\runner\Release",
+            "$env:ProgramFiles\htoochoon_flutter",
+            "${env:ProgramFiles(x86)}\htoochoon_flutter"
+          )
+          $bundle = $null
+          foreach ($c in $candidates) {
+            if ((Test-Path "$c\flutter_windows.dll") -and (Test-Path "$c\data\icudtl.dat")) {
+              $bundle = (Resolve-Path $c).Path; break
+            }
+          }
+          if (-not $bundle) {
+            Write-Host "::error::No complete bundle found. Searched:"
+            $candidates | ForEach-Object { Write-Host "  $_" }
+            Write-Host "=== flutter_windows.dll locations under build\ ==="
+            Get-ChildItem build -Recurse -Filter flutter_windows.dll -ErrorAction SilentlyContinue | Select-Object FullName
+            exit 1
+          }
+          Write-Host "Complete bundle: $bundle"
+          Get-ChildItem $bundle | Select-Object Name, Length | Format-Table -AutoSize
+          # Drop linker artifacts that may ride along.
+          Remove-Item "$bundle\*.exp","$bundle\*.lib" -ErrorAction SilentlyContinue
+          $size = (Get-ChildItem $bundle -Recurse | Measure-Object Length -Sum).Sum / 1MB
+          Write-Host ("Bundle OK — {0:N1} MB uncompressed" -f $size)
+          "WIN_BUNDLE=$bundle" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Compress-Archive -Path "$env:WIN_BUNDLE\*" -DestinationPath "release\htoochoon-windows-x64.zip" -Force
+          $mb = (Get-Item release\htoochoon-windows-x64.zip).Length / 1MB
+          Write-Host ("Zip size: {0:N1} MB" -f $mb)
+          if ($mb -lt 8) { Write-Host "::error::Zip only $([math]::Round($mb,1)) MB — incomplete bundle"; exit 1 }
+
+      - name: Build Inno Setup installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $src = "$env:WIN_BUNDLE\*"
+          $iss = @"
+          [Setup]
+          AppName=HtooChoon
+          AppVersion=1.0.0
+          AppPublisher=HtooChoon
+          DefaultDirName={autopf}\HtooChoon
+          DefaultGroupName=HtooChoon
+          DisableProgramGroupPage=yes
+          OutputDir=installer
+          OutputBaseFilename=htoochoon
+          Compression=lzma2
+          SolidCompression=yes
+          WizardStyle=modern
+          ArchitecturesAllowed=x64
+          ArchitecturesInstallIn64BitMode=x64
+          [Files]
+          Source: "$src"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+          [Icons]
+          Name: "{group}\HtooChoon"; Filename: "{app}\htoochoon_flutter.exe"
+          Name: "{autodesktop}\HtooChoon"; Filename: "{app}\htoochoon_flutter.exe"
+          [Run]
+          Filename: "{app}\htoochoon_flutter.exe"; Description: "Launch HtooChoon"; Flags: nowait postinstall skipifsilent
+          "@
+          Set-Content -Path htoochoon.iss -Value $iss -Encoding ASCII
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" htoochoon.iss
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item installer\htoochoon.exe release\htoochoon.exe
+          # A complete Flutter installer is ~12-20 MB. Anything under 9 MB means
+          # the runtime/assets didn't get packed — fail rather than ship a crasher.
+          $mb = (Get-Item release\htoochoon.exe).Length / 1MB
+          Write-Host ("Installer size: {0:N1} MB" -f $mb)
+          if ($mb -lt 9) { Write-Host "::error::Installer only $([math]::Round($mb,1)) MB — incomplete bundle"; exit 1 }
+          Get-ChildItem release
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# macOS  ->  htoochoon.dmg
+# ============================================================
+
+  macos:
+    name: macOS Desktop
+    needs: analyze
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Make DMG
+        run: |
+          mkdir -p release
+          APP="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -n1)"
+          if [ -z "$APP" ]; then echo "No .app found:"; ls -la build/macos/Build/Products/Release || true; exit 1; fi
+          echo "Packaging: $APP"
+          hdiutil create -volname "HtooChoon" -srcfolder "$APP" -ov -format UDZO release/htoochoon.dmg
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# iOS  ->  htoochoon.ipa  (unsigned, sideload/AltStore)
+# ============================================================
+
+  ios:
+    name: iOS
+    needs: analyze
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Refresh CocoaPods specs
+        run: |
+          rm -f ios/Podfile.lock
+          cd ios && pod repo update
+
+      - name: Build iOS unsigned
+        run: flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload release
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr release/htoochoon.ipa Payload
+
+      - name: Deploy
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# Web  ->  htoochoon-web.tar.gz
+# ============================================================
+
+  web:
+    name: Web
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build Web
+        continue-on-error: true
+        run: flutter build web --release
+
+      - name: Package
+        run: |
+          mkdir -p release
+          if [ -d build/web ]; then
+            tar -czf release/htoochoon-web.tar.gz -C build/web .
+          else
+            echo "Web build missing; skipping."; exit 0
+          fi
+
+      - name: Deploy
+        if: ${{ hashFiles('release/htoochoon-web.tar.gz') != '' }}
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+
+# ============================================================
+# Manifest  ->  latest.json
+# Runs after all builds; uses find -printf (fish-safe server shell).
+# ============================================================
+
+  manifest:
+    name: Publish manifest
+    needs: [android, linux, windows, macos, ios, web]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build latest.json
+        env:
+          RELEASE_KEY: ${{ secrets.RELEASE_UPLOAD_KEY }}
+          BASE: ${{ env.RELEASE_BASE_URL }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Pull the current file listing from the hidden uploader (JSON: [{name,size}]).
+          curl -sS --retry 6 --retry-delay 5 --retry-all-errors \
+            -H "x-release-key: $RELEASE_KEY" \
+            "${BASE%/}/god/release/list" > listing.json || echo '[]' > listing.json
+          cat listing.json
+          mkdir -p release
+          python3 - "$SHA" listing.json <<'PY' > release/latest.json
+          import sys, json, datetime
+          sha = sys.argv[1] if len(sys.argv) > 1 else ""
+          listing = sys.argv[2] if len(sys.argv) > 2 else "listing.json"
+          labels = {
+            "htoochoon.apk": ("android", "universal", "Android (universal APK)"),
+            "htoochoon-arm64-v8a.apk": ("android", "arm64-v8a", "Android arm64-v8a"),
+            "htoochoon-armeabi-v7a.apk": ("android", "armeabi-v7a", "Android armeabi-v7a"),
+            "htoochoon-x86_64.apk": ("android", "x86_64", "Android x86_64"),
+            "htoochoon.exe": ("windows", "x64", "Windows 10/11 (installer)"),
+            "htoochoon-windows-x64.zip": ("windows", "x64", "Windows 10/11 (portable zip)"),
+            "htoochoon-linux-x64.tar.gz": ("linux", "x64", "Linux x64 (tar.gz)"),
+            "htoochoon.dmg": ("macos", "universal", "macOS (.dmg)"),
+            "htoochoon.ipa": ("ios", "universal", "iOS (unsigned .ipa)"),
+            "htoochoon-web.tar.gz": ("web", "x64", "Web build (tar.gz)"),
+          }
+          try:
+            entries = json.load(open(listing, encoding="utf-8"))
+          except Exception:
+            entries = []
+          files = []
+          for e in entries:
+            name = e.get("name", "")
+            if not name:
+              continue
+            plat, arch, label = labels.get(name, ("other", "", name))
+            files.append({"name": name, "size": int(e.get("size") or 0),
+                          "platform": plat, "arch": arch, "label": label})
+          order = ["android", "windows", "macos", "linux", "ios", "web", "other"]
+          files.sort(key=lambda f: (order.index(f["platform"]) if f["platform"] in order else 99, f["name"]))
+          print(json.dumps({
+            "version": sha[:7],
+            "commit": sha,
+            "released": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "files": files,
+          }, indent=2))
+          PY
+          cat release/latest.json
+
+      - name: Deploy manifest
+        uses: ./.github/actions/deploy
+        with:
+          base_url: ${{ env.RELEASE_BASE_URL }}
+          key: ${{ secrets.RELEASE_UPLOAD_KEY }}
+
+      - name: Purge Cloudflare cache
+        if: ${{ always() && env.CF_API_TOKEN != '' && env.CF_ZONE_ID != '' }}
+        run: |
+          base="https://backend.htoochoon.com/download/latest"
+          files='latest.json htoochoon.apk htoochoon-arm64-v8a.apk htoochoon-armeabi-v7a.apk htoochoon-x86_64.apk htoochoon.exe htoochoon-windows-x64.zip htoochoon-linux-x64.tar.gz htoochoon.dmg htoochoon.ipa htoochoon-web.tar.gz'
+          json='{"files":['
+          first=1
+          for f in $files; do
+            [ $first -eq 1 ] || json="$json,"
+            first=0
+            json="$json\"$base/$f\""
+          done
+          json="$json]}"
+          curl -fsS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "$json" && echo "Cloudflare cache purged"

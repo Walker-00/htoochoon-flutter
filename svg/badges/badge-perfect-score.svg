@@ -1,0 +1,21 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="perfectBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#fb7185"/>
+    </linearGradient>
+    <filter id="perfGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="60" cy="60" r="55" fill="#1a1a24" stroke="url(#perfectBadge)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="45" fill="none" stroke="#ff6b6b" stroke-width="1" opacity="0.3"/>
+  <!-- Target/bullseye -->
+  <g transform="translate(60,48)" filter="url(#perfGlow)">
+    <circle cx="0" cy="0" r="22" fill="none" stroke="#ff6b6b" stroke-width="2.5"/>
+    <circle cx="0" cy="0" r="14" fill="none" stroke="#ff6b6b" stroke-width="2" opacity="0.7"/>
+    <circle cx="0" cy="0" r="6" fill="#ff6b6b"/>
+    <!-- Arrow in center -->
+    <line x1="0" y1="25" x2="0" y2="0" stroke="#fb7185" stroke-width="2" stroke-linecap="round"/>
+    <polygon points="0,-4 3,2 -3,2" fill="#fb7185"/>
+  </g>
+  <text x="60" y="88" text-anchor="middle" font-family="Space Grotesk" font-size="7" font-weight="700" fill="#ff6b6b" letter-spacing="1">PERFECT SCORE</text>
+</svg>

@@ -1,0 +1,31 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#E4B23C"/>
+    </linearGradient>
+    <filter id="goldGlow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <!-- Badge circle -->
+  <circle cx="60" cy="60" r="55" fill="#1a1a24" stroke="url(#goldBadge)" stroke-width="3"/>
+  <!-- Inner ring -->
+  <circle cx="60" cy="60" r="45" fill="none" stroke="#E4B23C" stroke-width="1" opacity="0.3"/>
+  <!-- Ribbon left -->
+  <path d="M30,95 L40,80 L50,95 L45,85 Z" fill="#E4B23C" opacity="0.8"/>
+  <!-- Ribbon right -->
+  <path d="M90,95 L80,80 L70,95 L75,85 Z" fill="#E4B23C" opacity="0.8"/>
+  <!-- Trophy icon -->
+  <g transform="translate(60,52)" filter="url(#goldGlow)">
+    <path d="M-14,-18 L-10,4 Q0,12 10,4 L14,-18 Z" fill="url(#goldBadge)"/>
+    <path d="M-14,-12 Q-24,-10 -22,-2 Q-20,4 -12,2" fill="none" stroke="#E4B23C" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M14,-12 Q24,-10 22,-2 Q20,4 12,2" fill="none" stroke="#E4B23C" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="-4" y="4" width="8" height="8" rx="1" fill="#92400E"/>
+    <rect x="-10" y="11" width="20" height="5" rx="2" fill="#92400E"/>
+  </g>
+  <!-- Star sparkle -->
+  <path d="M85,25 l2,-6 2,6 6,2 -6,2 -2,6 -2,-6 -6,-2z" fill="#fbbf24" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <!-- Text -->
+  <text x="60" y="85" text-anchor="middle" font-family="Space Grotesk" font-size="7" font-weight="700" fill="#E4B23C" letter-spacing="1">FIRST ASSIGNMENT</text>
+</svg>

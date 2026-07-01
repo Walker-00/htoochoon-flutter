@@ -1,0 +1,20 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="peacockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#$fillTeal" />
+            <stop offset="100%" stop-color="#$fillMint" />
+          </linearGradient>
+        </defs>
+
+        <path d="M60 15C85 15 105 40 105 70C105 95 85 105 60 105C35 105 15 95 15 70C15 40 35 15 60 15Z" 
+              stroke="url(#peacockGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        
+        <path d="M60 85C48 75 35 72 35 55C35 38 48 35 60 48C72 35 85 38 85 55C85 72 72 75 60 85Z" 
+              fill="#$fillTeal" opacity="0.15"/>
+              
+        <path d="M60 82C45 70 40 68 40 55C40 45 50 40 60 50C70 40 80 45 80 55C80 68 75 70 60 82Z" 
+              stroke="#$fillTeal" stroke-width="4" stroke-linecap="round"/>
+
+        <circle cx="60" cy="32" r="6" fill="#$fillGold" />
+        <line x1="60" y1="38" x2="60" y2="48" stroke="#$fillGold" stroke-width="3" stroke-linecap="round"/>
+      </svg>

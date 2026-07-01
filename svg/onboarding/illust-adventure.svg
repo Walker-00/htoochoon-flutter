@@ -1,0 +1,100 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c3f53c"/>
+      <stop offset="100%" stop-color="#1AA179"/>
+    </linearGradient>
+    <linearGradient id="grad1b" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0B6E74"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background decorative circles -->
+  <circle cx="80" cy="80" r="40" fill="#c3f53c" opacity="0.08"/>
+  <circle cx="340" cy="120" r="60" fill="#1AA179" opacity="0.06"/>
+  <circle cx="60" cy="320" r="30" fill="#E4B23C" opacity="0.1"/>
+  <circle cx="350" cy="340" r="45" fill="#c3f53c" opacity="0.05"/>
+
+  <!-- Floating geometric shapes -->
+  <polygon points="100,60 115,30 130,60" fill="#c3f53c" opacity="0.3">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,-8;0,0" dur="3s" repeatCount="indefinite"/>
+  </polygon>
+  <rect x="320" y="50" width="20" height="20" rx="4" fill="#E4B23C" opacity="0.25" transform="rotate(15 330 60)">
+    <animateTransform attributeName="transform" type="translate" values="0,0;0,6;0,0" dur="4s" repeatCount="indefinite"/>
+  </rect>
+  <circle cx="300" cy="80" r="8" fill="#c3f53c" opacity="0.4">
+    <animateTransform attributeName="transform" type="translate" values="0,0;4,0;0,0" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Open book base -->
+  <g transform="translate(200,210)">
+    <!-- Book spine -->
+    <rect x="-3" y="-10" width="6" height="120" rx="3" fill="#0A2540"/>
+    <!-- Left page -->
+    <path d="M-3,-10 Q-80,-5 -85,40 L-3,50 Z" fill="#1a1a24" stroke="#2a2a34" stroke-width="1"/>
+    <!-- Right page -->
+    <path d="M3,-10 Q80,-5 85,40 L3,50 Z" fill="#1a1a24" stroke="#2a2a34" stroke-width="1"/>
+    <!-- Page lines left -->
+    <line x1="-70" y1="5" x2="-15" y2="0" stroke="#333" stroke-width="1" opacity="0.5"/>
+    <line x1="-65" y1="15" x2="-15" y2="10" stroke="#333" stroke-width="1" opacity="0.4"/>
+    <line x1="-60" y1="25" x2="-15" y2="20" stroke="#333" stroke-width="1" opacity="0.3"/>
+    <!-- Page lines right -->
+    <line x1="15" y1="0" x2="70" y2="5" stroke="#333" stroke-width="1" opacity="0.5"/>
+    <line x1="15" y1="10" x2="65" y2="15" stroke="#333" stroke-width="1" opacity="0.4"/>
+    <line x1="15" y1="20" x2="60" y2="25" stroke="#333" stroke-width="1" opacity="0.3"/>
+  </g>
+
+  <!-- Character reading (simplified geometric) -->
+  <g transform="translate(200,140)">
+    <!-- Head -->
+    <circle cx="0" cy="0" r="28" fill="#c3f53c"/>
+    <!-- Eyes -->
+    <circle cx="-9" cy="-4" r="4" fill="#0a0a0f"/>
+    <circle cx="9" cy="-4" r="4" fill="#0a0a0f"/>
+    <!-- Eye shine -->
+    <circle cx="-7" cy="-5" r="1.5" fill="white"/>
+    <circle cx="11" cy="-5" r="1.5" fill="white"/>
+    <!-- Smile -->
+    <path d="M-8,8 Q0,16 8,8" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Hair spikes -->
+    <path d="M-15,-20 L-8,-35 L-2,-22" fill="#0A2540"/>
+    <path d="M-5,-25 L2,-40 L8,-27" fill="#0A2540"/>
+    <path d="M8,-22 L15,-36 L20,-20" fill="#0A2540"/>
+    <!-- Body -->
+    <rect x="-20" y="28" width="40" height="35" rx="12" fill="#0A2540"/>
+    <!-- Arms holding book -->
+    <path d="M-20,40 Q-35,50 -30,65" fill="none" stroke="#c3f53c" stroke-width="8" stroke-linecap="round"/>
+    <path d="M20,40 Q35,50 30,65" fill="none" stroke="#c3f53c" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#c3f53c">
+    <path d="M120,130 l3,-10 3,10 10,3 -10,3 -3,10 -3,-10 -10,-3z" opacity="0.6">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M300,180 l2,-7 2,7 7,2 -7,2 -2,7 -2,-7 -7,-2z" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+    </path>
+    <path d="M280,100 l2,-6 2,6 6,2 -6,2 -2,6 -2,-6 -6,-2z" opacity="0.4">
+      <animate attributeName="opacity" values="0.4;0.9;0.4" dur="3s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- Floating books -->
+  <g transform="translate(100,100)" opacity="0.35">
+    <rect x="0" y="0" width="30" height="22" rx="3" fill="#E4B23C" transform="rotate(-15 15 11)"/>
+    <rect x="5" y="3" width="22" height="16" rx="2" fill="#f0c94e" transform="rotate(-15 16 11)"/>
+  </g>
+  <g transform="translate(290,130)" opacity="0.3">
+    <rect x="0" y="0" width="25" height="18" rx="3" fill="#1AA179" transform="rotate(10 12 9)"/>
+  </g>
+
+  <!-- Title text -->
+  <text x="200" y="330" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="28" font-weight="700" fill="#f0f0f5">
+    Your Learning Adventure
+  </text>
+  <text x="200" y="360" text-anchor="middle" font-family="Nunito, sans-serif" font-size="14" fill="#8b8b9e">
+    Starts Here ✨
+  </text>
+</svg>

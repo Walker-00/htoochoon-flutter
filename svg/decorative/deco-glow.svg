@@ -1,0 +1,24 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glowRadial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c3f53c" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#c3f53c" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#c3f53c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Radial glow/spotlight -->
+  <circle cx="200" cy="200" r="180" fill="url(#glowRadial)"/>
+  <!-- Center bright spot -->
+  <circle cx="200" cy="200" r="30" fill="#c3f53c" opacity="0.08"/>
+  <!-- Rays -->
+  <g stroke="#c3f53c" stroke-width="0.5" opacity="0.08">
+    <line x1="200" y1="200" x2="200" y2="40"/>
+    <line x1="200" y1="200" x2="360" y2="200"/>
+    <line x1="200" y1="200" x2="200" y2="360"/>
+    <line x1="200" y1="200" x2="40" y2="200"/>
+    <line x1="200" y1="200" x2="313" y2="87"/>
+    <line x1="200" y1="200" x2="313" y2="313"/>
+    <line x1="200" y1="200" x2="87" y2="313"/>
+    <line x1="200" y1="200" x2="87" y2="87"/>
+  </g>
+</svg>
