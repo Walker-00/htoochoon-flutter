@@ -59,6 +59,15 @@ git -C "$SRC" archive "$REF" | tar -x -C "$TMP"
 for d in "${EXCLUDE_DIRS[@]}"; do rm -rf "${TMP:?}/$d"; done
 for f in "${EXCLUDE_FILES[@]}"; do rm -f  "${TMP:?}/$f"; done
 
+# Drop internal top-level docs (audits, architecture maps, mock-data / dead-code
+# reports, dependency graphs). No reason to publish auth/system internals. Keep
+# only the public-facing docs.
+KEEP_MD="README.md LICENSE PRIVACY_POLICY.md TERMS_OF_SERVICE.md"
+for md in "$TMP"/*.md; do
+  [ -e "$md" ] || continue
+  case " $KEEP_MD " in *" $(basename "$md") "*) : ;; *) rm -f "$md" ;; esac
+done
+
 # Mirror into the public repo. --delete makes it an exact copy of the Flutter
 # subset; .git (and anything you keep only in the public repo's .git) is preserved.
 rsync -a --delete --exclude='.git/' "$TMP"/ "$DST"/

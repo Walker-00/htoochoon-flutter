@@ -35,11 +35,16 @@ class LocalNotificationService {
         requestBadgePermission: false,
         requestSoundPermission: false,
       );
+      // Linux desktop requires its own settings block or initialize() throws.
+      const linux = LinuxInitializationSettings(
+        defaultActionName: 'Open notification',
+      );
       await _plugin.initialize(
         settings: const InitializationSettings(
           android: android,
           iOS: darwin,
           macOS: darwin,
+          linux: linux,
         ),
         onDidReceiveNotificationResponse: _onTap,
       );
