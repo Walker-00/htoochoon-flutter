@@ -42,56 +42,57 @@ class NotificationRouter {
       return;
     }
 
+    // `type` may be a backend enum (NEW_MESSAGE, SESSION_LIVE …) OR a legacy
+    // FCM literal (chat_mention, dm …). `scope` is the reliable router key the
+    // backend now stamps on `data` (program | course | organization |
+    // assessment). Route by scope + id keys first, fall back to type literals.
     final type = (data['type'] ?? data['screen'] ?? '').toString();
     final p = _params(data);
-    _log.i('routing notification type=$type');
+    final scope = _str(p, 'scope') ?? _str(data, 'scope');
+    _log.i('routing notification type=$type scope=$scope');
 
-    switch (type) {
-      case 'chat_mention':
-      case 'chat':
-      case 'chat_message':
-        final programId = _str(p, 'programId');
-        if (programId != null) {
-          nav.push(MaterialPageRoute(
-            builder: (_) => ProgramChatScreen(
-              programId: programId,
-              programName: _str(p, 'programName') ?? 'Chat',
-            ),
-          ));
-          return;
-        }
-        break;
-      case 'dm':
-      case 'direct_message':
-        final peerId = _str(p, 'peerId') ?? _str(p, 'senderId');
-        if (peerId != null) {
-          nav.push(MaterialPageRoute(
-            builder: (_) => DmThreadScreen(
-              peerId: peerId,
-              peerName: _str(p, 'peerName') ?? _str(p, 'senderName') ?? 'Message',
-            ),
-          ));
-          return;
-        }
-        break;
-      case 'discussion':
-      case 'qa':
-      case 'discussion_reply':
-      case 'discussion_mention':
-        final discussionId = _str(p, 'discussionId');
-        if (discussionId != null) {
-          nav.push(MaterialPageRoute(
-            builder: (_) => DiscussionThreadScreen(discussionId: discussionId),
-          ));
-          return;
-        }
-        break;
-      // Other types (assignment_grade, session_live, submission_returned,
-      // material_new, exam_alert …) land in the center until their target
-      // screens accept id-only construction. Extend cases here as screens gain
-      // lightweight (id-based) constructors.
+    // 💬 Program chat — @mention, new message, enrollment confirmation.
+    final programId = _str(p, 'programId');
+    if (programId != null &&
+        (scope == 'program' ||
+            type == 'NEW_MESSAGE' ||
+            type == 'chat_mention' ||
+            type == 'chat' ||
+            type == 'chat_message')) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => ProgramChatScreen(
+          programId: programId,
+          programName: _str(p, 'programName') ?? 'Chat',
+        ),
+      ));
+      return;
     }
 
+    // ✉️ Direct message.
+    final peerId = _str(p, 'peerId') ?? _str(p, 'senderId');
+    if (peerId != null &&
+        (scope == 'dm' || type == 'dm' || type == 'direct_message')) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => DmThreadScreen(
+          peerId: peerId,
+          peerName: _str(p, 'peerName') ?? _str(p, 'senderName') ?? 'Message',
+        ),
+      ));
+      return;
+    }
+
+    // 🧵 Discussion / Q&A.
+    final discussionId = _str(p, 'discussionId');
+    if (discussionId != null) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => DiscussionThreadScreen(discussionId: discussionId),
+      ));
+      return;
+    }
+
+    // Other scopes (session, course, organization, assessment) land in the
+    // center until their target screens accept id-only construction. Extend
+    // here as screens gain lightweight (id-based) constructors.
     nav.push(MaterialPageRoute(
       builder: (_) => const NotificationCenterScreen(),
     ));

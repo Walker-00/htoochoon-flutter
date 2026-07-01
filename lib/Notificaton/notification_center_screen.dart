@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Providers/notification_provider.dart';
 import 'package:htoochoon_flutter/models/api_models/notification_model.dart';
 import 'package:htoochoon_flutter/Notificaton/notification_settings_screen.dart';
+import 'package:htoochoon_flutter/services/notification_router.dart';
 import 'package:htoochoon_flutter/Theme/skeletons.dart';
 
 class NotificationCenterScreen extends StatefulWidget {
@@ -105,7 +106,14 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                     trailing: Text(_ago(n.createdAt),
                         style:
                             TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-                    onTap: () => context.read<NotificationProvider>().markRead(n),
+                    onTap: () {
+                      context.read<NotificationProvider>().markRead(n);
+                      // Route to the referenced page (program chat, dm, …).
+                      NotificationRouter.instance.route({
+                        'type': n.type,
+                        ...n.data,
+                      });
+                    },
                   );
                 },
               ),

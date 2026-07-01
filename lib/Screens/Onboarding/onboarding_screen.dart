@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
+import 'package:htoochoon_flutter/Screens/Onboarding/gamified_onboarding_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,9 +38,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('hasSeenOnboarding', true);
 
     if (!mounted) return;
+    // Continue into the gamified data-collection flow (interests / role / org).
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => MainScaffold()),
+      MaterialPageRoute(builder: (_) => const GamifiedOnboardingScreen()),
     );
   }
 

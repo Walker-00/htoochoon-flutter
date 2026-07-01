@@ -1,6 +1,7 @@
 import 'package:htoochoon_flutter/core/log/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/organisation_provider.dart';
+import 'package:htoochoon_flutter/Screens/AdminScreens/access_requests_screen.dart';
 import 'package:htoochoon_flutter/Screens/AdminScreens/advanced_student_search_screen.dart';
 import 'package:htoochoon_flutter/Screens/Deatiled_Screens/course_detail_screen.dart';
 import 'package:htoochoon_flutter/Screens/Deatiled_Screens/member_detail_screen.dart';
@@ -123,6 +124,18 @@ class _MembersScreenState extends State<MembersScreen>
                   ),
                 ),
                 actions: [
+                  IconButton(
+                    icon: Icon(Icons.how_to_reg_rounded, color: cs.primary),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AccessRequestsScreen(
+                          organisationId: widget.organisationId,
+                        ),
+                      ),
+                    ),
+                    tooltip: 'Access requests',
+                  ),
                   IconButton(
                     icon: Icon(Icons.person_search_rounded, color: cs.primary),
                     onPressed: () => Navigator.push(

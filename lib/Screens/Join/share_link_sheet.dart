@@ -66,11 +66,17 @@ class _ShareLinkSheetState extends State<_ShareLinkSheet> {
       final res = await context.read<ApiService>().createJoinLink(body);
       final map = Map<String, dynamic>.from(res as Map);
       final url = map['url']?.toString() ?? '';
+      final appLink = map['appLink']?.toString() ?? '';
       if (!mounted) return;
       Navigator.pop(context);
-      await Share.share(
-        'Join ${widget.targetName.isEmpty ? 'us' : widget.targetName} on HtooChoon:\n$url',
-      );
+      final target = widget.targetName.isEmpty ? 'us' : widget.targetName;
+      // Share the web link (universal, tappable) + the custom-scheme link that
+      // opens the app directly for people who already have it installed.
+      final msg = StringBuffer('Join $target on HtooChoon:\n$url');
+      if (appLink.isNotEmpty) {
+        msg.write('\n\nAlready have the app? Open it directly:\n$appLink');
+      }
+      await Share.share(msg.toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _creating = false);

@@ -637,6 +637,32 @@ abstract class ApiService {
     @Query("organizationId") String organizationId,
   );
 
+  // 🎯 Gamified onboarding — save interests / heardFrom / role.
+  @PATCH("/users/me/onboarding")
+  Future<dynamic> saveOnboarding(@Body() Map<String, dynamic> body);
+
+  // 🙋 Access requests (self-service join an org).
+  @GET("/organizations")
+  Future<dynamic> searchOrganizations(@Query("search") String? search);
+
+  @POST("/access-requests")
+  Future<dynamic> createAccessRequest(@Body() Map<String, dynamic> body);
+
+  @GET("/access-requests/mine")
+  Future<dynamic> myAccessRequests();
+
+  @GET("/access-requests/org/{organizationId}")
+  Future<dynamic> listOrgAccessRequests(
+    @Path("organizationId") String organizationId,
+    @Query("status") String? status,
+  );
+
+  @PATCH("/access-requests/{id}/decide")
+  Future<dynamic> decideAccessRequest(
+    @Path("id") String id,
+    @Body() Map<String, dynamic> body,
+  );
+
   // Records that the current student opened a material (engagement tracking).
   @POST("/materials/{id}/view")
   Future<dynamic> markMaterialViewed(@Path("id") String id);

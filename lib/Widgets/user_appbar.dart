@@ -86,25 +86,6 @@ class UserAppBar extends StatelessWidget implements PreferredSizeWidget {
           );
         }),
 
-        const SizedBox(width: AppTheme.spaceXs),
-
-        (showSearchIcon)
-            ? IconButton(
-                onPressed: () {},
-                style: IconButton.styleFrom(
-                  backgroundColor: Theme.of(context).cardColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: AppTheme.getBorder(context)),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.search,
-                  size: 20,
-                  color: AppTheme.getTextSecondary(context),
-                ),
-              )
-            : SizedBox(),
         const SizedBox(width: AppTheme.spaceMd),
 
         ProfileMenu(onProfileTabTap: onProfileTap),
