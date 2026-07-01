@@ -591,7 +591,8 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
         }
       }
     } catch (_) {/* silent — suggestions are best-effort */}
-    if (mounted) setState(() {
+    if (!mounted) return;
+    setState(() {
       _suggestions = merged;
       _loadingSuggest = false;
     });
