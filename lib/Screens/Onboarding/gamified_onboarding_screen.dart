@@ -579,10 +579,16 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
         for (final e in (res as List?) ?? []) {
           final m = Map<String, dynamic>.from(e as Map);
           final id = m['id']?.toString();
-          if (id != null && seen.add(id)) merged.add(m);
-          if (merged.length >= 6) break;
+          if (id != null && seen.add(id)) {
+            merged.add(m);
+          }
+          if (merged.length >= 6) {
+            break;
+          }
         }
-        if (merged.length >= 6) break;
+        if (merged.length >= 6) {
+          break;
+        }
       }
     } catch (_) {/* silent — suggestions are best-effort */}
     if (mounted) setState(() {
