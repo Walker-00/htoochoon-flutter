@@ -265,7 +265,10 @@ class _GamifiedOnboardingScreenState extends State<GamifiedOnboardingScreen> {
           ),
           const SizedBox(height: AppTheme.spaceLg),
           if (_founderHasOrg)
-            _OrgSearchRequest(requestedRole: 'ORG_ADMIN')
+            _OrgSearchRequest(
+              requestedRole: 'ORG_ADMIN',
+              interests: _interests.toList(),
+            )
           else
             _infoCard(
               'Tap “Enter HtooChoon” below, then use “+ New” on your Profile to '
@@ -284,7 +287,10 @@ class _GamifiedOnboardingScreenState extends State<GamifiedOnboardingScreen> {
             'Search the org you want to $roleLabel by name or email, then send a '
             'join request. An admin approves you.'),
         const SizedBox(height: AppTheme.spaceLg),
-        _OrgSearchRequest(requestedRole: _role ?? 'STUDENT'),
+        _OrgSearchRequest(
+          requestedRole: _role ?? 'STUDENT',
+          interests: _interests.toList(),
+        ),
       ],
     );
   }
@@ -531,8 +537,9 @@ class _AddCustomFieldState extends State<_AddCustomField> {
 
 /// Search organizations by name/email and send a join (access) request.
 class _OrgSearchRequest extends StatefulWidget {
-  const _OrgSearchRequest({required this.requestedRole});
+  const _OrgSearchRequest({required this.requestedRole, this.interests = const []});
   final String requestedRole;
+  final List<String> interests;
 
   @override
   State<_OrgSearchRequest> createState() => _OrgSearchRequestState();
@@ -540,10 +547,49 @@ class _OrgSearchRequest extends StatefulWidget {
 
 class _OrgSearchRequestState extends State<_OrgSearchRequest> {
   final _ctrl = TextEditingController();
+  final _inviteCtrl = TextEditingController();
   List<Map<String, dynamic>> _results = [];
+  List<Map<String, dynamic>> _suggestions = [];
   bool _loading = false;
+  bool _loadingSuggest = false;
+  bool _showInvite = false;
+  bool _redeeming = false;
   String? _requestedOrgId;
   String? _requestedOrgName;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.interests.isNotEmpty) {
+      _loadSuggestions();
+    }
+  }
+
+  // Pre-fill suggestions from the interests picked earlier (IELTS, GED…), so the
+  // user sees relevant orgs before typing anything. Backend matches interest
+  // terms against org name/category/description.
+  Future<void> _loadSuggestions() async {
+    setState(() => _loadingSuggest = true);
+    final api = context.read<ApiService>();
+    final seen = <String>{};
+    final merged = <Map<String, dynamic>>[];
+    try {
+      for (final term in widget.interests.take(4)) {
+        final res = await api.searchOrganizations(term.trim());
+        for (final e in (res as List?) ?? []) {
+          final m = Map<String, dynamic>.from(e as Map);
+          final id = m['id']?.toString();
+          if (id != null && seen.add(id)) merged.add(m);
+          if (merged.length >= 6) break;
+        }
+        if (merged.length >= 6) break;
+      }
+    } catch (_) {/* silent — suggestions are best-effort */}
+    if (mounted) setState(() {
+      _suggestions = merged;
+      _loadingSuggest = false;
+    });
+  }
 
   Future<void> _search() async {
     final q = _ctrl.text.trim();
@@ -558,6 +604,36 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
       _results = [];
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // Accept a full link (htoochoon://join/<token>, https://…/join/<token>) or a
+  // bare token, redeem it, and either join instantly or land as a pending request.
+  Future<void> _redeemInvite() async {
+    final raw = _inviteCtrl.text.trim();
+    if (raw.isEmpty) return;
+    final token = raw.contains('/') ? raw.split('/').where((s) => s.isNotEmpty).last : raw;
+    setState(() => _redeeming = true);
+    try {
+      final res = await context.read<ApiService>().redeemJoinLink(token);
+      final map = res is Map ? Map<String, dynamic>.from(res) : <String, dynamic>{};
+      final mode = (map['mode'] ?? map['approvalMode'] ?? '').toString().toUpperCase();
+      if (!mounted) return;
+      setState(() {
+        _requestedOrgId = 'invite';
+        _requestedOrgName = map['organizationName']?.toString() ??
+            (map['organization'] is Map ? (map['organization']['name']?.toString()) : null);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(mode == 'APPROVAL' ? 'Request sent — an admin will approve you.' : 'Joined! 🎉'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invalid or expired invite: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _redeeming = false);
     }
   }
 
@@ -585,7 +661,51 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
   @override
   void dispose() {
     _ctrl.dispose();
+    _inviteCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _orgTile(BuildContext context, Map<String, dynamic> org) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.spaceXs),
+      padding: const EdgeInsets.all(AppTheme.spaceSm),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: AppTheme.getBorder(context)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: cs.primary.withValues(alpha: 0.12),
+            child: Text(
+              (org['name']?.toString() ?? '?').characters.first.toUpperCase(),
+              style: TextStyle(color: cs.primary),
+            ),
+          ),
+          const SizedBox(width: AppTheme.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(org['name']?.toString() ?? '—',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                if ((org['category'] ?? org['email']) != null)
+                  Text((org['category'] ?? org['email']).toString(),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.getTextSecondary(context))),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            onPressed: () => _request(org),
+            child: const Text('Request'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -618,6 +738,62 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Invite-link shortcut — join instantly / request via a shared link.
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _showInvite = !_showInvite),
+            icon: Icon(_showInvite ? Icons.expand_less : Icons.link_rounded, size: 18),
+            label: const Text('Have an invite link?'),
+          ),
+        ),
+        if (_showInvite) ...[
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _inviteCtrl,
+                  onSubmitted: (_) => _redeemInvite(),
+                  decoration: InputDecoration(
+                    hintText: 'Paste invite link or code…',
+                    prefixIcon: const Icon(Icons.link_rounded),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppTheme.spaceXs),
+              FilledButton(
+                onPressed: _redeeming ? null : _redeemInvite,
+                child: _redeeming
+                    ? const SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Join'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+        ],
+
+        // Suggestions from the interests picked earlier — shown before searching.
+        if (_loadingSuggest)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppTheme.spaceSm),
+            child: Text('Finding orgs for you…'),
+          )
+        else if (_suggestions.isNotEmpty && _results.isEmpty && !_loading) ...[
+          Text('Suggested for you',
+              style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.getTextSecondary(context))),
+          const SizedBox(height: AppTheme.spaceXs),
+          ..._suggestions.map((org) => _orgTile(context, org)),
+          const SizedBox(height: AppTheme.spaceMd),
+        ],
+
         Row(
           children: [
             Expanded(
@@ -648,50 +824,7 @@ class _OrgSearchRequestState extends State<_OrgSearchRequest> {
           Text('Search for your organization above.',
               style: TextStyle(color: AppTheme.getTextTertiary(context)))
         else
-          ..._results.map((org) => Container(
-                margin: const EdgeInsets.only(bottom: AppTheme.spaceXs),
-                padding: const EdgeInsets.all(AppTheme.spaceSm),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                  border: Border.all(color: AppTheme.getBorder(context)),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: cs.primary.withValues(alpha: 0.12),
-                      child: Text(
-                        (org['name']?.toString() ?? '?')
-                            .characters
-                            .first
-                            .toUpperCase(),
-                        style: TextStyle(color: cs.primary),
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spaceSm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(org['name']?.toString() ?? '—',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700)),
-                          if (org['email'] != null)
-                            Text(org['email'].toString(),
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        AppTheme.getTextSecondary(context))),
-                        ],
-                      ),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => _request(org),
-                      child: const Text('Request'),
-                    ),
-                  ],
-                ),
-              )),
+          ..._results.map((org) => _orgTile(context, org)),
       ],
     );
   }
