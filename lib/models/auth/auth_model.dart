@@ -165,6 +165,16 @@ class User {
   final List<Membership>? memberships;
   final UserCount? count;
 
+  // Onboarding / profile enrichment fields (tolerate absence on older payloads).
+  @JsonKey(includeIfNull: false)
+  final DateTime? onboardedAt;
+  @JsonKey(includeIfNull: false)
+  final List<String>? interests;
+  @JsonKey(includeIfNull: false)
+  final String? heardFrom;
+  @JsonKey(includeIfNull: false)
+  final String? intendedRole;
+
   User({
     required this.id,
     required this.email,
@@ -179,6 +189,10 @@ class User {
     this.twoFactorSecret,
     this.memberships,
     this.count,
+    this.onboardedAt,
+    this.interests,
+    this.heardFrom,
+    this.intendedRole,
   });
   String? get absoluteAvatarUrl {
     if (avatar == null || avatar!.isEmpty) return null;

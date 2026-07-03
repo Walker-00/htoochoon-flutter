@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 
 import 'package:htoochoon_flutter/Theme/themedata.dart';
+import 'package:htoochoon_flutter/Widgets/in_development_badge.dart';
 import 'package:htoochoon_flutter/Screens/Discussion/discussion_list_screen.dart';
 import 'package:htoochoon_flutter/Providers/assignment_provider.dart';
 import 'package:htoochoon_flutter/Providers/auth_provider.dart';
@@ -670,12 +671,22 @@ class _CreateAssignmentScreenState extends State<CreateAssignmentScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'A rich document editor and file attachments are coming soon.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.getTextSecondary(context),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const InDevelopmentBadge(),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'A rich document editor and file attachments are '
+                          'coming soon.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.getTextSecondary(context),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

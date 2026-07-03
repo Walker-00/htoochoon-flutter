@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:htoochoon_flutter/core/log/app_logger.dart';
 import 'package:htoochoon_flutter/Notificaton/notification_center_screen.dart';
+import 'package:htoochoon_flutter/Screens/AdminScreens/access_requests_screen.dart';
+import 'package:htoochoon_flutter/Screens/Deatiled_Screens/course_chat_screen.dart';
 import 'package:htoochoon_flutter/Screens/Deatiled_Screens/program_chat_screen.dart';
 import 'package:htoochoon_flutter/Screens/Discussion/dm_thread_screen.dart';
 import 'package:htoochoon_flutter/Screens/Discussion/discussion_thread_screen.dart';
@@ -90,9 +92,38 @@ class NotificationRouter {
       return;
     }
 
-    // Other scopes (session, course, organization, assessment) land in the
-    // center until their target screens accept id-only construction. Extend
-    // here as screens gain lightweight (id-based) constructors.
+    // 📚 Course-scoped — materials publish, assessment/exam publish, exam-lock,
+    // course-scope enrollment. None of the rich course/assessment screens can
+    // be built from ids alone (they need name/orgId or full objects), so route
+    // to the course chat/hub which only needs the courseId. This lands the user
+    // in the right course context; the title fills in from the fetched chat.
+    final courseId = _str(p, 'courseId');
+    if (courseId != null) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => CourseChatScreen(
+          courseId: courseId,
+          courseName: _str(p, 'courseName') ?? 'Course',
+        ),
+      ));
+      return;
+    }
+
+    // 🏢 Organization-scoped — self-service access requests (approve/decline).
+    // AccessRequestsScreen is the only org screen buildable from an id alone,
+    // and it's the relevant target for access-request notifications.
+    final organizationId =
+        _str(p, 'organizationId') ?? _str(p, 'organisationId');
+    if (organizationId != null &&
+        (scope == 'organization' || _str(p, 'accessRequestId') != null)) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => AccessRequestsScreen(organisationId: organizationId),
+      ));
+      return;
+    }
+
+    // Remaining scopes (live session, submission, assessment without a course)
+    // land in the center until their target screens accept id-only
+    // construction. Extend here as screens gain lightweight (id-based) ctors.
     nav.push(MaterialPageRoute(
       builder: (_) => const NotificationCenterScreen(),
     ));

@@ -434,9 +434,65 @@ class _RealCourseCard extends StatelessWidget {
 }
 
 // ── Real Program Tile ─────────────────────────────────────
-class _RealProgramTile extends StatelessWidget {
+class _RealProgramTile extends StatefulWidget {
   final ProgramResponse program;
   const _RealProgramTile({required this.program});
+
+  @override
+  State<_RealProgramTile> createState() => _RealProgramTileState();
+}
+
+class _RealProgramTileState extends State<_RealProgramTile> {
+  bool _enrolling = false;
+
+  ProgramResponse get program => widget.program;
+
+  void _openProgram() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProgramIntroScreen(program: program),
+      ),
+    );
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  Future<void> _enroll(EnrollmentProvider enrollProv) async {
+    final userId = UserSessionManager.userId;
+    if (userId == null) {
+      _snack('Please sign in to enroll');
+      return;
+    }
+    setState(() => _enrolling = true);
+    // Self-enrollment defaults to PENDING; an admin approves it to ACTIVE.
+    final result = await enrollProv.enrollProgram(
+      ProgramEnrollmentRequest(
+        userId: userId,
+        programId: program.id,
+        status: EnrollmentStatus.PENDING,
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _enrolling = false);
+
+    if (result != null) {
+      // enrollProgram appends to myProgramEnrollments, so the watching
+      // build() below flips this card to the "enrolled" state automatically.
+      _snack('Enrolled — pending approval');
+    } else {
+      final err = (enrollProv.error ?? '').toLowerCase();
+      if (err.contains('409') || err.contains('already')) {
+        _snack("You're already enrolled");
+      } else {
+        _snack('Could not enroll. Please try again.');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -450,6 +506,7 @@ class _RealProgramTile extends StatelessWidget {
     );
 
     final isEnrolled = matchedEnrollment.id != "NONE";
+    final enrolledCount = program.count?.enrollments ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spaceSm),
@@ -459,71 +516,157 @@ class _RealProgramTile extends StatelessWidget {
         border: Border.all(color: AppTheme.getBorder(context)),
       ),
       child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProgramIntroScreen(program: program),
-          ),
-        ),
+        onTap: _openProgram,
         borderRadius: AppTheme.borderRadiusLg,
         child: Padding(
           padding: const EdgeInsets.all(AppTheme.spaceMd),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 52,
-                width: 52,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.08),
-                  borderRadius: AppTheme.borderRadiusMd,
-                ),
-                child: Icon(Icons.school_rounded, color: colorScheme.primary),
+              Row(
+                children: [
+                  Container(
+                    height: 52,
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.08),
+                      borderRadius: AppTheme.borderRadiusMd,
+                    ),
+                    child:
+                        Icon(Icons.school_rounded, color: colorScheme.primary),
+                  ),
+                  const SizedBox(width: AppTheme.spaceMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          program.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        // 🏢 Real Organization Detail row injection
+                        Text(
+                          'Hosted by: ${program.organization?.name ?? "Brainy Buds Hub"}',
+                          style: TextStyle(
+                            color: colorScheme.tertiary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Courses / type + REAL enrolled count
+                        Row(
+                          children: [
+                            Text(
+                              '${program.programCourses.length} Courses • ${program.type.name}',
+                              style: TextStyle(
+                                color: AppTheme.getTextSecondary(context),
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.groups_rounded,
+                              size: 13,
+                              color: AppTheme.getTextTertiary(context),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$enrolledCount enrolled',
+                              style: TextStyle(
+                                color: AppTheme.getTextSecondary(context),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 🎨 Render dynamic badge when already enrolled
+                  if (isEnrolled)
+                    _StatusBadge(status: matchedEnrollment.status.name),
+                ],
               ),
-              const SizedBox(width: AppTheme.spaceMd),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      program.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    // 🏢 Real Organization Detail row injection
-                    Text(
-                      'Hosted by: ${program.organization?.name ?? "Brainy Buds Hub"}',
-                      style: TextStyle(
-                        color: colorScheme.tertiary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${program.programCourses.length} Courses • ${program.type.name}',
-                      style: TextStyle(
-                        color: AppTheme.getTextSecondary(context),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // 🎨 Render dynamic badge inline or point chevron direction
-              isEnrolled
-                  ? _StatusBadge(status: matchedEnrollment.status.name)
-                  : Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: AppTheme.getTextTertiary(context),
-                    ),
+              const SizedBox(height: AppTheme.spaceSm),
+              // ── Primary action: Enroll vs Go-to-program ──
+              _buildAction(context, colorScheme, isEnrolled, enrollProv),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAction(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isEnrolled,
+    EnrollmentProvider enrollProv,
+  ) {
+    const padding = EdgeInsets.symmetric(vertical: 11, horizontal: 18);
+    const textStyle = TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
+
+    if (isEnrolled) {
+      return Row(
+        children: [
+          Icon(Icons.check_circle_rounded,
+              size: 16, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            'Already enrolled',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.primary,
+            ),
+          ),
+          const Spacer(),
+          OutlinedButton.icon(
+            onPressed: _openProgram,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: const Text('Go to program', style: textStyle),
+            style: OutlinedButton.styleFrom(
+              padding: padding,
+              foregroundColor: colorScheme.primary,
+              side: BorderSide(color: colorScheme.primary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: ElevatedButton(
+        onPressed: _enrolling ? null : () => _enroll(enrollProv),
+        style: ElevatedButton.styleFrom(
+          padding: padding,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+        ),
+        child: _enrolling
+            ? const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text('Enroll', style: textStyle),
       ),
     );
   }

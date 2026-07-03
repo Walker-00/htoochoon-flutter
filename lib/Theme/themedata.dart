@@ -312,6 +312,7 @@ class AppTheme {
     useMaterial3: true,
     fontFamily: _fontFamily,
     brightness: Brightness.light,
+    visualDensity: VisualDensity.compact,
 
     colorScheme: _lightScheme,
 
@@ -366,14 +367,13 @@ class AppTheme {
         elevation: 0,
         backgroundColor: _lightAccent,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
         textStyle: const TextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
         ),
       ),
@@ -383,32 +383,38 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: _lightTextPrimary,
         side: const BorderSide(color: _lightBorder, width: 1),
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
+        textStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+        ),
       ),
     ),
 
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: _lightAccent,
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
+        textStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+        ),
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: _lightSurface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: spaceMd,
-        vertical: spaceSm,
-      ),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: borderRadiusMd,
         borderSide: const BorderSide(color: _lightBorder, width: 1),
@@ -479,6 +485,7 @@ class AppTheme {
     useMaterial3: true,
     fontFamily: _fontFamily,
     brightness: Brightness.dark,
+    visualDensity: VisualDensity.compact,
 
     colorScheme: _darkScheme,
 
@@ -531,14 +538,13 @@ class AppTheme {
         elevation: 0,
         backgroundColor: _darkAccent,
         foregroundColor: _darkBackground,
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
         textStyle: const TextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           letterSpacing: 0.1,
         ),
       ),
@@ -548,32 +554,38 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: _darkTextPrimary,
         side: const BorderSide(color: _darkBorder, width: 1),
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
+        textStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+        ),
       ),
     ),
 
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: _darkAccent,
-        padding: const EdgeInsets.symmetric(
-          horizontal: spaceMd,
-          vertical: spaceSm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMd),
+        textStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+        ),
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: _darkSurfaceVariant,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: spaceMd,
-        vertical: spaceSm,
-      ),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: borderRadiusMd,
         borderSide: const BorderSide(color: _darkBorder, width: 1),

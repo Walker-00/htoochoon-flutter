@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+
+import '../../Widgets/in_development_badge.dart';
 
 // ── Data Models ──────────────────────────────────────────────────────────────
 
@@ -486,6 +487,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   letterSpacing: 0.1,
                 ),
               ),
+              const SizedBox(width: 8),
+              const InDevelopmentBadge(),
             ],
           ),
           const SizedBox(height: 14),
@@ -888,7 +891,7 @@ class _PlanButton extends StatelessWidget {
 
     if (plan.contactSales) {
       return GestureDetector(
-        onTap: () {},
+        onTap: () => showComingSoonSnackBar(context, 'Contact Sales'),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 11),
@@ -911,7 +914,7 @@ class _PlanButton extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () {},
+      onTap: () => showComingSoonSnackBar(context, 'Plan upgrades'),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 11),

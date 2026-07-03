@@ -85,6 +85,12 @@ abstract class ApiService {
   @POST("/users/{organizationId}/leave")
   Future<void> userLeaveOrg(@Path("organizationId") String orgId);
 
+  @POST("/users/{id}/change-password")
+  Future<void> changePassword(
+    @Path("id") String id,
+    @Body() Map<String, dynamic> body,
+  );
+
   @PATCH("/users/{id}")
   Future<User> updateUser(
     @Path("id") String id,

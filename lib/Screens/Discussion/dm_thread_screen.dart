@@ -97,8 +97,13 @@ class _DmThreadScreenState extends State<DmThreadScreen> {
               emptyMessage: 'Say hello to ${widget.peerName}.',
               builder: (_) {
                 final msgs = p.dmMessages!;
-                return ListView.builder(
+                return RefreshIndicator(
+                  onRefresh: () => context
+                      .read<DiscussionProvider>()
+                      .loadConversation(widget.peerId),
+                  child: ListView.builder(
                   reverse: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(12),
                   itemCount: msgs.length,
                   itemBuilder: (_, i) {
@@ -135,6 +140,7 @@ class _DmThreadScreenState extends State<DmThreadScreen> {
                       ),
                     );
                   },
+                ),
                 );
               },
             ),

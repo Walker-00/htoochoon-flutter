@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:htoochoon_flutter/Providers/auth_provider.dart';
 import 'package:htoochoon_flutter/Screens/AuthScreens/otp_screen.dart';
+import 'package:htoochoon_flutter/Screens/AuthScreens/forgot_password_screen.dart';
 import 'package:htoochoon_flutter/models/auth/auth_model.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
@@ -281,7 +282,14 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
         );
       } else {
         messenger.showSnackBar(
-          const SnackBar(content: Text("Registration failed")),
+          SnackBar(
+            content: Text(
+              provider.authError ??
+                  "Couldn't create your account. Please try again.",
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     } else {
@@ -309,7 +317,16 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
           ),
         );
       } else {
-        messenger.showSnackBar(const SnackBar(content: Text("Login failed")));
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              provider.authError ??
+                  "Couldn't sign you in. Please try again.",
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }
@@ -479,6 +496,36 @@ class _AuthFormSectionState extends State<_AuthFormSection> {
                     return null;
                   },
                 ),
+
+                if (!_isSignUp)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ForgotPasswordScreen(
+                              initialEmail: _emailController.text.trim().isEmpty
+                                  ? null
+                                  : _emailController.text.trim(),
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Forgot password?',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ),
 
                 if (_isSignUp) ...[
                   const SizedBox(height: AppTheme.spaceLg),

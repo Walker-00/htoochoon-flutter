@@ -144,18 +144,22 @@ class _HomeTabState extends State<HomeTab> {
             );
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.spaceLg),
-            child: Column(
-              children: const [
-                LeftUserDashboard(),
-                SizedBox(height: AppTheme.spaceLg),
-                UpcomingLiveSection(),
-                SizedBox(height: AppTheme.spaceLg),
-                EnrolledProgramsSection(),
-                SizedBox(height: AppTheme.spaceLg),
-                EnrolledCoursesSection(),
-              ],
+          return RefreshIndicator(
+            onRefresh: _loadHomeData,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppTheme.spaceLg),
+              child: Column(
+                children: const [
+                  LeftUserDashboard(),
+                  SizedBox(height: AppTheme.spaceLg),
+                  UpcomingLiveSection(),
+                  SizedBox(height: AppTheme.spaceLg),
+                  EnrolledProgramsSection(),
+                  SizedBox(height: AppTheme.spaceLg),
+                  EnrolledCoursesSection(),
+                ],
+              ),
             ),
           );
         },

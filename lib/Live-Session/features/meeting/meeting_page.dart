@@ -446,14 +446,17 @@ class _MeetingPageState extends State<MeetingPage> with WidgetsBindingObserver {
 
       await Future.delayed(const Duration(milliseconds: 100));
 
-      while (!_ms.isSendTRXConnected && retry < 20) {
+      while (!_ms.isSendTRXConnected && retry < 30) {
         logD("⏳ Waiting for transport...");
         await Future.delayed(const Duration(milliseconds: 500));
         retry++;
       }
 
       if (!_ms.isSendTRXConnected) {
-        throw Exception("Transport never connected");
+        // Local media (camera) works but the media transport never opened —
+        // almost always a network path problem (WebRTC UDP blocked, or on
+        // macOS the Local Network permission was denied).
+        throw Exception("MEDIA_TRANSPORT_FAILED");
       }
 
       final recvParams = await fetchRecvTransportParams();
@@ -492,9 +495,40 @@ class _MeetingPageState extends State<MeetingPage> with WidgetsBindingObserver {
   }
 
   void _showInitError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('⚠️ Init error: $message')));
+    // Translate the internal transport failure into something a user can act on.
+    // This is the classic "my video preview shows but I can't actually join"
+    // case (common on macOS when Local Network access is denied, or when a
+    // firewall/VPN blocks WebRTC UDP).
+    final bool transportFailed = message.contains('MEDIA_TRANSPORT_FAILED') ||
+        message.contains('Transport never connected');
+    final bool isDesktop = !kIsWeb &&
+        (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
+
+    final String friendly;
+    if (transportFailed) {
+      friendly = isDesktop
+          ? "Couldn't connect the live media. Allow HtooChoon in System Settings › Privacy › Local Network (and camera/mic), turn off any VPN/firewall blocking it, then tap Retry."
+          : "Couldn't connect the live media. Check your network (VPN/firewall can block it) and tap Retry.";
+    } else {
+      friendly = 'Could not join the session: $message';
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(friendly),
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: () {
+            _meetingStarted = false;
+            _isInitializing = false;
+            _initMeeting();
+          },
+        ),
+      ),
+    );
   }
 
   void _setupSocketListeners() {

@@ -1,7 +1,6 @@
 import 'package:htoochoon_flutter/core/log/app_logger.dart';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Screens/Library/library_screen.dart';
 import 'package:htoochoon_flutter/Providers/auth_provider.dart';
@@ -10,7 +9,10 @@ import 'package:htoochoon_flutter/Providers/AdminProviders/subscription_provider
 import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Screens/AdminScreens/admin_shell.dart';
 import 'package:htoochoon_flutter/Screens/Onboarding/org_loader_screen.dart';
+import 'package:htoochoon_flutter/Screens/Profile/personal_info_screen.dart';
+import 'package:htoochoon_flutter/Screens/Profile/privacy_security_screen.dart';
 import 'package:htoochoon_flutter/Screens/TeacherScreens/teacher_shell.dart';
+import 'package:htoochoon_flutter/utils/avatar_util.dart';
 import 'package:htoochoon_flutter/Widgets/user_appbar.dart';
 import 'package:htoochoon_flutter/core/userorgrole_manager.dart';
 import 'package:htoochoon_flutter/models/api_models/enums.dart';
@@ -213,6 +215,8 @@ class _DesktopLayout extends StatelessWidget {
           flex: 3,
           child: Column(
             children: [
+              const _AccountLinksCard(),
+              const SizedBox(height: 20),
               const _ProfileCard(),
               const SizedBox(height: 20),
               const _OrganisationsCard(),
@@ -270,6 +274,8 @@ class _MobileLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const _AccountLinksCard(),
+        const SizedBox(height: 16),
         const _ProfileCard(),
         const SizedBox(height: 16),
         _PreferencesCard(
@@ -294,6 +300,111 @@ class _MobileLayout extends StatelessWidget {
   }
 }
 
+// ─── Account Links Card ───────────────────────────────────────────────────────
+
+class _AccountLinksCard extends StatelessWidget {
+  const _AccountLinksCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        children: [
+          _AccountLinkTile(
+            icon: Icons.person_outline,
+            title: 'Personal information',
+            subtitle: 'Photo, name and email',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _AccountLinkTile(
+            icon: Icons.shield_outlined,
+            title: 'Privacy & security',
+            subtitle: 'Password, language and 2FA',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrivacySecurityScreen()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountLinkTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AccountLinkTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outline),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 19, color: cs.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                size: 20, color: cs.onSurface.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Profile Card ─────────────────────────────────────────────────────────────
 
 class _ProfileCard extends StatefulWidget {
@@ -304,195 +415,10 @@ class _ProfileCard extends StatefulWidget {
 }
 
 class _ProfileCardState extends State<_ProfileCard> {
-  XFile? _selectedPreviewFile;
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user; // ✅
     if (user == null) return const SizedBox.shrink();
-
-    Widget _buildAvatarWidget(User user) {
-      // 1. Local Image Picker Preview logic block
-      if (_selectedPreviewFile != null) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: kIsWeb
-              ? Image.network(
-                  _selectedPreviewFile!.path,
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                )
-              : Image.file(
-                  File(_selectedPreviewFile!.path),
-                  width: 72,
-                  height: 72,
-                  fit: BoxFit.cover,
-                ),
-        );
-      }
-
-      // 2. Production URL validation asset processor
-      final String? remoteUrl = user.absoluteAvatarUrl;
-      if (remoteUrl != null && remoteUrl.isNotEmpty) {
-        final bustedUrl =
-            '$remoteUrl?t=${user.updatedAt?.millisecondsSinceEpoch ?? DateTime.now().millisecondsSinceEpoch}';
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            bustedUrl,
-            width: 72,
-            height: 72,
-            fit: BoxFit.cover,
-            // 🎯 Shows you EXACTLY why the app rejects the image stream if it fails
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint(
-                "❌ Network image rendering failure exception path ($remoteUrl): $error",
-              );
-              return Container(
-                width: 72,
-                height: 72,
-                color: Colors.red.shade100,
-                child: const Icon(Icons.broken_image, color: Colors.red),
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const SizedBox(
-                width: 72,
-                height: 72,
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              );
-            },
-          ),
-        );
-      }
-
-      // 3. Fallback vector profile silhouette if no image exists
-      return Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.person, color: Colors.white, size: 36),
-      );
-    }
-
-    bool _shouldShowPlaceholderIcon(User user) {
-      // If a preview file is chosen, hide the vector icon placeholder
-      if (_selectedPreviewFile != null) return false;
-
-      final String? remoteUrl = user.absoluteAvatarUrl;
-      return remoteUrl == null || remoteUrl.isEmpty;
-    }
-
-    void _showPreviewConfirmationDialog(BuildContext context, dynamic user) {
-      // 1. Capture the root page scaffold messenger state safely up front
-      // before ANY asynchronous thread breaks or dialog frames close.
-      final messenger = ScaffoldMessenger.of(context);
-      final primaryColor = Theme.of(context).colorScheme.primary;
-      final auth = context.read<AuthProvider>();
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogCtx) {
-          return AlertDialog(
-            title: const Text('Preview Profile Picture'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Do you want to save this photo as your new avatar?',
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                    image: kIsWeb
-                        ? DecorationImage(
-                            image: NetworkImage(_selectedPreviewFile!.path),
-                            fit: BoxFit.cover,
-                          )
-                        : DecorationImage(
-                            image: FileImage(File(_selectedPreviewFile!.path)),
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedPreviewFile = null;
-                  });
-                  Navigator.pop(dialogCtx);
-                },
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-              // ─── Locate inside your _showPreviewConfirmationDialog method ───
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
-                onPressed: () async {
-                  Navigator.pop(dialogCtx);
-
-                  bool success = false;
-                  try {
-                    success = await auth.uploadProfilePicture(
-                      user.id,
-                      _selectedPreviewFile!,
-                    );
-                  } catch (e) {
-                    if (e.toString().contains('type cast') ||
-                        e.toString().contains('subtype of type')) {
-                      success = true;
-                    }
-                  }
-
-                  // 🎯 FIX: Verify that the widget is still attached to the element tree
-                  // before modifying state properties to prevent unmounted crash exceptions.
-                  if (mounted) {
-                    setState(() {
-                      _selectedPreviewFile = null;
-                    });
-                  }
-
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        success
-                            ? 'Profile picture updated successfully!'
-                            : 'Failed to upload image change.',
-                      ),
-                      backgroundColor: success ? Colors.green : Colors.red,
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Save & Apply',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-    }
 
     final cs = Theme.of(context).colorScheme;
 
@@ -559,50 +485,8 @@ class _ProfileCardState extends State<_ProfileCard> {
             ),
             child: Row(
               children: [
-                // Avatar
-                // ── Avatar Asset Section ───────────────────────────
-                GestureDetector(
-                  onTap: () async {
-                    final ImagePicker picker = ImagePicker();
-                    final XFile? image = await picker.pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 80,
-                    );
-
-                    if (image != null) {
-                      setState(() {
-                        _selectedPreviewFile =
-                            image; // 🎯 Catch preview path state
-                      });
-
-                      // Open the confirmation layout sheet or dialog window
-                      _showPreviewConfirmationDialog(context, user);
-                    }
-                  },
-                  child: Stack(
-                    children: [
-                      _buildAvatarWidget(user),
-                      Positioned(
-                        bottom: 2,
-                        right: 2,
-                        child: Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: cs.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 11,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Avatar (upload / generated / reset flow)
+                const EditableAvatar(),
 
                 const SizedBox(width: 16),
                 Expanded(
@@ -1838,38 +1722,48 @@ class _PreferencesCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: cs.outline),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: language,
-                isExpanded: true,
-                icon: Icon(Icons.keyboard_arrow_down,
-                    color: cs.onSurface.withValues(alpha: 0.6)),
-                style: TextStyle(fontSize: 14, color: cs.onSurface),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'English (US)',
-                    child: Text('English (US)'),
+          Builder(
+            builder: (context) {
+              final locale = context.watch<LocaleProvider>();
+              final current = locale.locale?.languageCode; // null = system
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: cs.outline),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: current,
+                    isExpanded: true,
+                    icon: Icon(Icons.keyboard_arrow_down,
+                        color: cs.onSurface.withValues(alpha: 0.6)),
+                    style: TextStyle(fontSize: 14, color: cs.onSurface),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('System default'),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'en',
+                        child: Text(LocaleProvider.labelFor('en')),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'my',
+                        child: Text(LocaleProvider.labelFor('my')),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'th',
+                        child: Text(LocaleProvider.labelFor('th')),
+                      ),
+                    ],
+                    onChanged: (code) => locale
+                        .setLocale(code == null ? null : Locale(code)),
                   ),
-                  DropdownMenuItem(
-                    value: 'English (UK)',
-                    child: Text('English (UK)'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Nederlands',
-                    child: Text('Nederlands'),
-                  ),
-                  DropdownMenuItem(value: 'Deutsch', child: Text('Deutsch')),
-                ],
-                onChanged: onLanguage,
-              ),
-            ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Text(
@@ -2349,42 +2243,120 @@ class _SecurityCard extends StatelessWidget {
   void _showChangePassword(BuildContext context) {
     final currentCtrl = TextEditingController();
     final newCtrl = TextEditingController();
+    final rootContext = context;
+    bool isSubmitting = false;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current password'),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          Future<void> submit() async {
+            final current = currentCtrl.text.trim();
+            final next = newCtrl.text;
+            if (current.isEmpty || next.isEmpty) {
+              ScaffoldMessenger.of(rootContext).showSnackBar(
+                const SnackBar(
+                  content: Text('Please fill in both fields.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            if (next.length < 6) {
+              ScaffoldMessenger.of(rootContext).showSnackBar(
+                const SnackBar(
+                  content: Text('New password must be at least 6 characters.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+
+            setDialogState(() => isSubmitting = true);
+            try {
+              await rootContext
+                  .read<AuthProvider>()
+                  .changePassword(current, next);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              if (!rootContext.mounted) return;
+              ScaffoldMessenger.of(rootContext).showSnackBar(
+                const SnackBar(
+                  content: Text('Password updated'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } catch (e) {
+              if (!rootContext.mounted) return;
+              setDialogState(() => isSubmitting = false);
+              final msg = e.toString().toLowerCase();
+              final friendly =
+                  (msg.contains('incorrect') ||
+                      msg.contains('invalid') ||
+                      msg.contains('wrong') ||
+                      msg.contains('400') ||
+                      msg.contains('401'))
+                  ? 'Current password is incorrect.'
+                  : 'Could not update password. Please try again.';
+              ScaffoldMessenger.of(rootContext).showSnackBar(
+                SnackBar(
+                  content: Text(friendly),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Change Password'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentCtrl,
+                  obscureText: true,
+                  enabled: !isSubmitting,
+                  decoration: const InputDecoration(
+                    labelText: 'Current password',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: newCtrl,
+                  obscureText: true,
+                  enabled: !isSubmitting,
+                  decoration: const InputDecoration(labelText: 'New password'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: newCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'New password'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              // authProv.updateUser(id, updates)
-            },
-            child: const Text('Update', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                ),
+                onPressed: isSubmitting ? null : submit,
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Update',
+                        style: TextStyle(color: Colors.white),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

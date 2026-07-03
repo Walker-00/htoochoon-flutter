@@ -4,23 +4,47 @@ import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Providers/invitation_provider.dart';
 import 'package:provider/provider.dart';
 
-class InvitationsTab extends StatelessWidget {
+class InvitationsTab extends StatefulWidget {
   const InvitationsTab({Key? key}) : super(key: key);
+
+  @override
+  State<InvitationsTab> createState() => _InvitationsTabState();
+}
+
+class _InvitationsTabState extends State<InvitationsTab>
+    with SingleTickerProviderStateMixin {
+  // Re-runs the provider's load (its only reload entry-point takes a vsync +
+  // email) so pull-to-refresh pulls the latest invitations from the backend.
+  Future<void> _refresh() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (email == null) return;
+    context.read<InvitationProvider>().init(vsync: this, email: email);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<InvitationProvider>(
       builder: (context, provider, child) {
-        if (provider.invitations.isEmpty) {
-          return const Center(child: Text("No pending invitations"));
-        }
-
-        return ListView.builder(
-          itemCount: provider.invitations.length,
-          itemBuilder: (context, index) {
-            logD(provider.invitations.length);
-            return InvitationTile(inviteData: provider.invitations[index]);
-          },
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: provider.invitations.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 120),
+                    Center(child: Text("No pending invitations")),
+                  ],
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: provider.invitations.length,
+                  itemBuilder: (context, index) {
+                    logD(provider.invitations.length);
+                    return InvitationTile(
+                      inviteData: provider.invitations[index],
+                    );
+                  },
+                ),
         );
       },
     );

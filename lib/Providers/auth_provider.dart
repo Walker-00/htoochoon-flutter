@@ -32,6 +32,59 @@ class AuthProvider extends ChangeNotifier {
   }
   String? _otpEmail;
   String? get otpEmail => _otpEmail;
+
+  /// Last human-readable auth error (login/register), for the UI to show.
+  String? _authError;
+  String? get authError => _authError;
+
+  /// Turn any thrown error into a clear, actionable message for the user.
+  /// Prefers the backend's `message`; falls back to status-code / network
+  /// specific copy so the user knows what went wrong and what to do.
+  String _friendlyError(Object e, {required bool isRegister}) {
+    if (e is DioException) {
+      // Backend-supplied message wins — filters now return meaningful text.
+      final data = e.response?.data;
+      String? backendMsg;
+      if (data is Map && data["message"] != null) {
+        final m = data["message"];
+        backendMsg = m is List ? m.join(" • ") : m.toString();
+      } else if (data is String && data.trim().isNotEmpty) {
+        backendMsg = data.trim();
+      }
+      if (backendMsg != null && backendMsg.isNotEmpty) return backendMsg;
+
+      // No body — infer from status / connection state.
+      final code = e.response?.statusCode;
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return "The server took too long to respond. Check your connection and try again.";
+        case DioExceptionType.connectionError:
+          return "Can't reach the server. Check your internet connection and try again.";
+        default:
+          break;
+      }
+      if (code == 401) {
+        return "Incorrect email or password. Please check and try again.";
+      }
+      if (code == 409) {
+        return "An account with this email already exists. Try logging in instead.";
+      }
+      if (code == 429) {
+        return "Too many attempts. Please wait a moment and try again.";
+      }
+      if (code != null && code >= 500) {
+        return "Something went wrong on our end. Please try again in a moment — if it keeps happening, contact support.";
+      }
+      return isRegister
+          ? "Couldn't create your account. Please check your details and try again."
+          : "Couldn't sign you in. Please check your details and try again.";
+    }
+    return isRegister
+        ? "Couldn't create your account. Please try again."
+        : "Couldn't sign you in. Please try again.";
+  }
   AuthStatus _status = AuthStatus.unauthenticated;
   AuthStatus get status => _status;
   bool _isLoading = false;
@@ -174,6 +227,7 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      _authError = null;
       final response = await apiService.register(request);
       _otpEmail = request.email;
       _status = AuthStatus.needsOtp;
@@ -181,6 +235,7 @@ class AuthProvider extends ChangeNotifier {
       return RegisterResult.success;
     } catch (e) {
       debugPrint("Register Error: $e");
+      _authError = _friendlyError(e, isRegister: true);
       return RegisterResult.error;
     } finally {
       _isLoading = false;
@@ -387,6 +442,7 @@ class AuthProvider extends ChangeNotifier {
       logD("Auth Provider: login result is sucess");
       return LoginResult.success;
     } catch (e) {
+      _authError = _friendlyError(e, isRegister: false);
       if (e is DioException) {
         final data = e.response?.data;
 
@@ -429,6 +485,7 @@ class AuthProvider extends ChangeNotifier {
 
                 _otpEmail = request.email;
                 _status = AuthStatus.needsOtp;
+                _authError = null; // not an error — routing to verification
 
                 _isLoading = false;
                 notifyListeners();
@@ -477,6 +534,34 @@ class AuthProvider extends ChangeNotifier {
       return response;
     } catch (e) {
       debugPrint("Reset Password Error: $e");
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// =========================
+  /// CHANGE PASSWORD
+  /// =========================
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    final id = _userId ?? _user?.id;
+    if (id == null) {
+      throw Exception('Not authenticated');
+    }
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      await apiService.changePassword(id, {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+    } catch (e) {
+      debugPrint("Change Password Error: $e");
       rethrow;
     } finally {
       _isLoading = false;

@@ -40,6 +40,8 @@
 	<string>HtooChoon needs camera access for live video sessions.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>HtooChoon needs microphone access for live audio in sessions.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>HtooChoon needs local network access to connect live video/audio (WebRTC) during sessions.</string>
 
 </dict>
 </plist>

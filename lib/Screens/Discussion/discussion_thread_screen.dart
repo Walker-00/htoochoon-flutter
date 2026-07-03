@@ -115,7 +115,11 @@ class _DiscussionThreadScreenState extends State<DiscussionThreadScreen> {
       childrenOf.putIfAbsent(m.parentId!, () => []).add(m);
     }
 
-    return ListView(
+    return RefreshIndicator(
+      onRefresh: () =>
+          context.read<DiscussionProvider>().loadThread(widget.discussionId),
+      child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       children: [
         // Question card
@@ -178,6 +182,7 @@ class _DiscussionThreadScreenState extends State<DiscussionThreadScreen> {
             ),
         ],
       ],
+      ),
     );
   }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:htoochoon_flutter/Theme/themedata.dart';
 import 'package:htoochoon_flutter/api/api_service.dart';
+import 'package:htoochoon_flutter/Providers/auth_provider.dart';
+import 'package:htoochoon_flutter/models/auth/auth_model.dart';
 import 'package:htoochoon_flutter/Screens/MainLayout/main_scaffold.dart';
 
 /// 🎯 Gamified first-run data collection: interests → where-you-heard → role →
@@ -18,6 +20,40 @@ class GamifiedOnboardingScreen extends StatefulWidget {
 class _GamifiedOnboardingScreenState extends State<GamifiedOnboardingScreen> {
   int _step = 0;
   bool _saving = false;
+  bool _checkingOnboarded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _skipIfAlreadyOnboarded(),
+    );
+  }
+
+  /// If this user already finished onboarding on a previous run, don't ask the
+  /// data-collection questions again — go straight into the app. We trust the
+  /// server's `onboardedAt`; the local user copy may be stale so we refresh.
+  Future<void> _skipIfAlreadyOnboarded() async {
+    final auth = context.read<AuthProvider>();
+    User? user = auth.user;
+    if (user?.onboardedAt == null) {
+      try {
+        user = await auth.loadMe();
+      } catch (_) {
+        // Offline / transient — just show onboarding rather than blocking.
+      }
+    }
+    if (!mounted) return;
+    if (user?.onboardedAt != null) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScaffold()),
+        (_) => false,
+      );
+      return;
+    }
+    setState(() => _checkingOnboarded = false);
+  }
 
   // Answers
   final Set<String> _interests = {};
@@ -80,6 +116,9 @@ class _GamifiedOnboardingScreenState extends State<GamifiedOnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    if (_checkingOnboarded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       body: SafeArea(
         child: Column(
