@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Constants/app_colors.dart';
+import 'package:htoochoon_flutter/Screens/InDevelopment/in_development_screen.dart';
 import 'package:htoochoon_flutter/Constants/text_constants.dart';
 
 import 'package:htoochoon_flutter/Providers/AdminProviders/live_sessions_provider.dart';
@@ -331,7 +332,7 @@ class AiMentorSuggestion extends StatelessWidget {
             child: Material(
               color: colorScheme.onPrimary.withValues(alpha: 0.15),
               child: InkWell(
-                onTap: () {},
+                onTap: () => openInDevelopment(context, 'AI Mentor Suggestion'),
                 splashColor: colorScheme.onPrimary.withValues(alpha: 0.15),
                 highlightColor: colorScheme.onPrimary.withValues(alpha: 0.08),
                 child: Padding(

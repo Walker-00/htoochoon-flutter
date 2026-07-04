@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Constants/app_colors.dart';
 import 'package:htoochoon_flutter/Live-Session/models/class_model.dart';
+import 'package:htoochoon_flutter/api/api_service.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/courses_provider.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/organisation_provider.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/programs_provider.dart';
@@ -444,6 +445,7 @@ class _RealProgramTile extends StatefulWidget {
 
 class _RealProgramTileState extends State<_RealProgramTile> {
   bool _enrolling = false;
+  bool _requested = false;
 
   ProgramResponse get program => widget.program;
 
@@ -468,8 +470,27 @@ class _RealProgramTileState extends State<_RealProgramTile> {
       _snack('Please sign in to enroll');
       return;
     }
+    final orgId = program.organizationId;
+
+    // Org staff (owner / admin / teacher / staff) run the program — they must
+    // not be able to self-enrol as a student in it.
+    if (orgId != null && UserSessionManager.isOrgStaff(orgId)) {
+      _snack("You manage this program, so you can't enrol as a student.");
+      return;
+    }
+
+    // Not yet a member of the host org → enrolment needs admin approval first.
+    // Send an access request tagged with this program so the admin sees exactly
+    // what the user wants to join.
+    if (orgId != null && !UserSessionManager.isMemberOf(orgId)) {
+      await _requestAccess(orgId);
+      return;
+    }
+
     setState(() => _enrolling = true);
-    // Self-enrollment defaults to PENDING; an admin approves it to ACTIVE.
+    // TODO(payment): for paid programs, collect payment via the in-app payment
+    // gateway here before creating the enrollment.
+    // Member student self-enrolment defaults to PENDING; an admin approves it.
     final result = await enrollProv.enrollProgram(
       ProgramEnrollmentRequest(
         userId: userId,
@@ -488,8 +509,39 @@ class _RealProgramTileState extends State<_RealProgramTile> {
       final err = (enrollProv.error ?? '').toLowerCase();
       if (err.contains('409') || err.contains('already')) {
         _snack("You're already enrolled");
+      } else if (err.contains('staff') || err.contains('owner')) {
+        _snack("You manage this program, so you can't enrol as a student.");
       } else {
         _snack('Could not enroll. Please try again.');
+      }
+    }
+  }
+
+  /// Non-members can't enrol directly — ask the org admin/owner for access,
+  /// carrying the target program so the request list shows what they want.
+  Future<void> _requestAccess(String orgId) async {
+    setState(() => _enrolling = true);
+    try {
+      await context.read<ApiService>().createAccessRequest({
+        'organizationId': orgId,
+        'requestedRole': 'STUDENT',
+        'programId': program.id,
+        'message': 'Requesting to enrol in ${program.name}',
+      });
+      if (!mounted) return;
+      setState(() {
+        _enrolling = false;
+        _requested = true;
+      });
+      _snack('Request sent — an admin will review your enrollment.');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _enrolling = false);
+      if (e.toString().toLowerCase().contains('already')) {
+        setState(() => _requested = true);
+        _snack('You have already requested to join.');
+      } else {
+        _snack('Could not send request. Please try again.');
       }
     }
   }
@@ -645,6 +697,49 @@ class _RealProgramTileState extends State<_RealProgramTile> {
       );
     }
 
+    final orgId = program.organizationId;
+    final isStaff = orgId != null && UserSessionManager.isOrgStaff(orgId);
+    final isMember = orgId == null || UserSessionManager.isMemberOf(orgId);
+
+    // Org staff can't self-enrol — show a clear non-actionable state.
+    if (isStaff) {
+      return Row(
+        children: [
+          Icon(Icons.verified_user_rounded,
+              size: 16, color: colorScheme.tertiary),
+          const SizedBox(width: 6),
+          Text(
+            'You manage this program',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.tertiary,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Non-member who already fired off an access request.
+    if (_requested) {
+      return Row(
+        children: [
+          Icon(Icons.hourglass_top_rounded,
+              size: 16, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            'Enrollment requested',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.primary,
+            ),
+          ),
+        ],
+      );
+    }
+
+    final label = isMember ? 'Enroll' : 'Request to enroll';
     return Align(
       alignment: Alignment.centerRight,
       child: ElevatedButton(
@@ -666,7 +761,7 @@ class _RealProgramTileState extends State<_RealProgramTile> {
                   color: Colors.white,
                 ),
               )
-            : const Text('Enroll', style: textStyle),
+            : Text(label, style: textStyle),
       ),
     );
   }
@@ -1782,17 +1877,60 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                                   debugPrint(
                                     "🔑 [Enroll Button] User Organization Role: $role",
                                   );
-                                  if (role == Role.ORG_ADMIN) {
+                                  // Org staff (owner/admin/teacher/staff) run
+                                  // this — they can't self-enrol as a student.
+                                  if (UserSessionManager.isOrgStaff(orgId)) {
                                     debugPrint(
-                                      "🛑 [Enroll Button] Stopped: User is ORG_ADMIN.",
+                                      "🛑 [Enroll Button] Stopped: user is org staff.",
                                     );
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          'You are already an admin for this ${isProgramType ? 'program' : 'course'}.',
+                                          "You manage this ${isProgramType ? 'program' : 'course'}, so you can't enrol as a student.",
                                         ),
                                       ),
                                     );
+                                    return;
+                                  }
+
+                                  // Not a member of the host org yet → enrolment
+                                  // needs admin approval. Send an access request
+                                  // tagged with the program instead of enrolling.
+                                  if (!UserSessionManager.isMemberOf(orgId)) {
+                                    try {
+                                      await context
+                                          .read<ApiService>()
+                                          .createAccessRequest({
+                                        'organizationId': orgId,
+                                        'requestedRole': 'STUDENT',
+                                        if (isProgramType)
+                                          'programId': program.id,
+                                        'message': isProgramType
+                                            ? 'Requesting to enrol in ${program.name}'
+                                            : 'Requesting access to enrol',
+                                      });
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Request sent — an admin will review your enrollment.',
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      if (!context.mounted) return;
+                                      final already = e
+                                          .toString()
+                                          .toLowerCase()
+                                          .contains('already');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(already
+                                              ? 'You have already requested to join.'
+                                              : 'Could not send request. Please try again.'),
+                                        ),
+                                      );
+                                    }
                                     return;
                                   }
 

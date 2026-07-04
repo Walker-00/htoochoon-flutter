@@ -59,6 +59,25 @@ class UserSessionManager {
     return membership?.role ?? Role.STUDENT;
   }
 
+  /// True if the user owns or holds any membership row in [orgId]. Unlike
+  /// [orgRole] (which defaults non-members to STUDENT), this actually
+  /// distinguishes a member from a total outsider.
+  static bool isMemberOf(String orgId) {
+    if (_ownedOrgIds.contains(orgId)) return true;
+    for (final m in _user?.memberships ?? const []) {
+      if (m.organization.id == orgId) return true;
+    }
+    return false;
+  }
+
+  /// True if the user runs [orgId] (owner / admin / teacher / staff) and so
+  /// must NOT be able to self-enrol as a student in its programs.
+  static bool isOrgStaff(String orgId) {
+    if (_ownedOrgIds.contains(orgId)) return true;
+    final r = orgRole(orgId);
+    return r == Role.ORG_ADMIN || r == Role.TEACHER || r == Role.STAFF;
+  }
+
   /// True if the user is an ORG_ADMIN of (or owns) any organization. Used to
   /// gate admin-only actions client-side — the backend is the real authority.
   static bool get isAnyOrgAdmin {

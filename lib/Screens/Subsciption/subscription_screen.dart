@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../Widgets/in_development_badge.dart';
+import 'package:htoochoon_flutter/Screens/InDevelopment/in_development_screen.dart';
 
 // ── Data Models ──────────────────────────────────────────────────────────────
 
@@ -444,8 +445,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   // ── ROI Insight ─────────────────────────────────────────────────────────────
 
   Widget _buildROIInsight() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+    return Builder(
+      builder: (context) => GestureDetector(
+        onTap: () => openInDevelopment(context, 'AI ROI Insight'),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -536,6 +540,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             ],
           ),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -891,7 +897,7 @@ class _PlanButton extends StatelessWidget {
 
     if (plan.contactSales) {
       return GestureDetector(
-        onTap: () => showComingSoonSnackBar(context, 'Contact Sales'),
+        onTap: () => openInDevelopment(context, 'Contact Sales'),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 11),
@@ -914,7 +920,7 @@ class _PlanButton extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: () => showComingSoonSnackBar(context, 'Plan upgrades'),
+      onTap: () => openInDevelopment(context, 'Plan upgrades'),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 11),

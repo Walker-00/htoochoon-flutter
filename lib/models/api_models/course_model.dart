@@ -16,6 +16,13 @@ class CourseRequest {
   final CourseType type;
   final String organizationId;
 
+  /// Subject / category the course belongs to (English, Math, GED, IELTS…).
+  final String? category;
+
+  /// Free-form topics covered, shown as chips.
+  @JsonKey(defaultValue: [])
+  final List<String> topics;
+
   // final String? campaignId;
   // final String? schoolId;
 
@@ -25,6 +32,8 @@ class CourseRequest {
 
     required this.type,
     required this.organizationId,
+    this.category,
+    this.topics = const [],
     // this.campaignId,
     // this.schoolId,
   });
@@ -68,6 +77,9 @@ class CourseResponse {
   final String? description;
   final String? organizationId;
   final CourseType type;
+  final String? category;
+  @JsonKey(defaultValue: [])
+  final List<String> topics;
   final String? campaignId;
   final String? schoolId;
   final DateTime createdAt;
@@ -93,6 +105,8 @@ class CourseResponse {
     this.description,
     this.organizationId,
     required this.type,
+    this.category,
+    this.topics = const [],
     this.campaignId,
     this.schoolId,
     required this.createdAt,

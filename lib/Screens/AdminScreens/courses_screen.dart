@@ -877,7 +877,22 @@ class _CoursesScreenState extends State<CoursesScreen> {
   ) async {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
+    final categoryOtherCtrl = TextEditingController();
+    final topicsCtrl = TextEditingController();
     CourseType selectedType = CourseType.SKILL;
+    String? categoryValue;
+    const categoryPresets = [
+      'English',
+      'Math',
+      'Science',
+      'GED',
+      'IELTS',
+      'TOEFL',
+      'SAT',
+      'Programming',
+      'Business',
+      'Other',
+    ];
 
     await showDialog(
       context: context,
@@ -929,6 +944,40 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     .toList(),
                 onChanged: (v) => setInner(() => selectedType = v!),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: categoryValue,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Category (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                items: categoryPresets
+                    .map(
+                      (c) => DropdownMenuItem(value: c, child: Text(c)),
+                    )
+                    .toList(),
+                onChanged: (v) => setInner(() => categoryValue = v),
+              ),
+              if (categoryValue == 'Other') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: categoryOtherCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Custom category',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: topicsCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Topics (comma-separated)',
+                  helperText: 'e.g. Grammar, Essay Writing, Reading',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -940,6 +989,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
               onPressed: () async {
                 if (nameCtrl.text.isEmpty) return;
                 Navigator.pop(ctx);
+                final cat = categoryValue == 'Other'
+                    ? (categoryOtherCtrl.text.trim().isNotEmpty
+                          ? categoryOtherCtrl.text.trim()
+                          : null)
+                    : categoryValue;
+                final topics = topicsCtrl.text
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
                 await prov.createCourse(
                   CourseRequest(
                     name: nameCtrl.text,
@@ -948,6 +1007,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         : null,
                     organizationId: orgId,
                     type: selectedType,
+                    category: cat,
+                    topics: topics,
                   ),
                 );
               },
@@ -966,7 +1027,29 @@ class _CoursesScreenState extends State<CoursesScreen> {
   ) async {
     final nameCtrl = TextEditingController(text: course.name);
     final descCtrl = TextEditingController(text: course.description ?? '');
+    final topicsCtrl = TextEditingController(text: course.topics.join(', '));
     CourseType selectedType = course.type;
+    const categoryPresets = [
+      'English',
+      'Math',
+      'Science',
+      'GED',
+      'IELTS',
+      'TOEFL',
+      'SAT',
+      'Programming',
+      'Business',
+      'Other',
+    ];
+    final existingCategory = course.category ?? '';
+    String? categoryValue = existingCategory.isEmpty
+        ? null
+        : (categoryPresets.contains(existingCategory)
+              ? existingCategory
+              : 'Other');
+    final categoryOtherCtrl = TextEditingController(
+      text: categoryValue == 'Other' ? existingCategory : '',
+    );
 
     await showDialog(
       context: context,
@@ -1019,6 +1102,40 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     .toList(),
                 onChanged: (v) => setInner(() => selectedType = v!),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: categoryValue,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Category (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                items: categoryPresets
+                    .map(
+                      (c) => DropdownMenuItem(value: c, child: Text(c)),
+                    )
+                    .toList(),
+                onChanged: (v) => setInner(() => categoryValue = v),
+              ),
+              if (categoryValue == 'Other') ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: categoryOtherCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Custom category',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: topicsCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Topics (comma-separated)',
+                  helperText: 'e.g. Grammar, Essay Writing, Reading',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -1030,6 +1147,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
               onPressed: () async {
                 if (nameCtrl.text.isEmpty) return;
                 Navigator.pop(ctx);
+                final cat = categoryValue == 'Other'
+                    ? (categoryOtherCtrl.text.trim().isNotEmpty
+                          ? categoryOtherCtrl.text.trim()
+                          : null)
+                    : categoryValue;
+                final topics = topicsCtrl.text
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
                 final success = await prov.updateCourse(
                   course.id,
                   CourseRequest(
@@ -1039,6 +1166,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         : null,
                     organizationId: course.organizationId.toString(),
                     type: selectedType,
+                    category: cat,
+                    topics: topics,
                   ),
                 );
                 if (context.mounted) {

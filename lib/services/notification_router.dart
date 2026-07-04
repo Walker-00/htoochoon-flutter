@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/core/log/app_logger.dart';
 import 'package:htoochoon_flutter/Notificaton/notification_center_screen.dart';
 import 'package:htoochoon_flutter/Screens/AdminScreens/access_requests_screen.dart';
+import 'package:htoochoon_flutter/Screens/InDevelopment/in_development_screen.dart';
 import 'package:htoochoon_flutter/Screens/Deatiled_Screens/course_chat_screen.dart';
 import 'package:htoochoon_flutter/Screens/Deatiled_Screens/program_chat_screen.dart';
 import 'package:htoochoon_flutter/Screens/Discussion/dm_thread_screen.dart';
@@ -92,13 +93,19 @@ class NotificationRouter {
       return;
     }
 
-    // 📚 Course-scoped — materials publish, assessment/exam publish, exam-lock,
-    // course-scope enrollment. None of the rich course/assessment screens can
-    // be built from ids alone (they need name/orgId or full objects), so route
-    // to the course chat/hub which only needs the courseId. This lands the user
-    // in the right course context; the title fills in from the fetched chat.
+    // 📚 Course CHAT only — a real course-chat message. Other course-scoped
+    // notifications (materials/exam publish, exam-lock, enrollment) point at
+    // rich screens that can't be built from an id yet, so they must NOT dump
+    // the user into the chat; they fall through to the In-Development page.
     final courseId = _str(p, 'courseId');
-    if (courseId != null) {
+    final isCourseChat = courseId != null &&
+        (scope == 'course_chat' ||
+            scope == 'course-chat' ||
+            type == 'NEW_MESSAGE' ||
+            type == 'chat' ||
+            type == 'chat_message' ||
+            type == 'course_message');
+    if (isCourseChat) {
       nav.push(MaterialPageRoute(
         builder: (_) => CourseChatScreen(
           courseId: courseId,
@@ -122,11 +129,55 @@ class NotificationRouter {
     }
 
     // Remaining scopes (live session, submission, assessment without a course)
-    // land in the center until their target screens accept id-only
-    // construction. Extend here as screens gain lightweight (id-based) ctors.
+    // point at target screens that don't accept id-only construction yet, so
+    // they show the In-Development page. Genuinely generic/unknown notifications
+    // still land in the Notification Center so a tap is never a dead end.
+    final unbuiltTarget = scope == 'assessment' ||
+        scope == 'submission' ||
+        scope == 'session' ||
+        scope == 'live_session' ||
+        scope == 'course' ||
+        scope == 'material' ||
+        scope == 'materials' ||
+        _str(p, 'courseId') != null ||
+        _str(p, 'materialId') != null ||
+        _str(p, 'sessionId') != null ||
+        _str(p, 'roomId') != null ||
+        _str(p, 'submissionId') != null ||
+        _str(p, 'assessmentId') != null;
+    if (unbuiltTarget) {
+      nav.push(MaterialPageRoute(
+        builder: (_) => InDevelopmentScreen(feature: _inDevFeatureName(scope, p)),
+      ));
+      return;
+    }
     nav.push(MaterialPageRoute(
       builder: (_) => const NotificationCenterScreen(),
     ));
+  }
+
+  String _inDevFeatureName(String? scope, Map<String, dynamic> p) {
+    if (scope == 'assessment' || _str(p, 'assessmentId') != null) {
+      return 'Exam & assessment view';
+    }
+    if (scope == 'submission' || _str(p, 'submissionId') != null) {
+      return 'Submission review';
+    }
+    if (scope == 'session' ||
+        scope == 'live_session' ||
+        _str(p, 'sessionId') != null ||
+        _str(p, 'roomId') != null) {
+      return 'Live session details';
+    }
+    if (_str(p, 'materialId') != null ||
+        scope == 'material' ||
+        scope == 'materials') {
+      return 'Course materials';
+    }
+    if (scope == 'course' || _str(p, 'courseId') != null) {
+      return 'Course update';
+    }
+    return 'This notification';
   }
 
   /// Accept nested `params` or a flat payload.
