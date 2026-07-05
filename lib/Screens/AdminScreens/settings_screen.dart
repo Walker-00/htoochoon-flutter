@@ -424,18 +424,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) async {
     // Note: If you want to upload the multi-part file logo image, you can pass `_pickedImage`
     // to your provider handling method layer here.
+    //
+    // ⚠️ OrganizationRequest.toJson serialises null fields, and the backend
+    // treats JSON null as "set to null" (null ≠ undefined). So any field left
+    // null here gets WIPED. This form only edits name/email/description/payment,
+    // so carry every other field through from the current org to avoid clobbering
+    // category / phone / address / website / socialLinks / logoUrl.
+    final org = prov.organisation;
     await prov.updateOrganisation(
       widget.organisationId,
       OrganizationRequest(
         name: _nameCtrl.text,
         email: _emailCtrl.text,
         description: _descCtrl.text.isNotEmpty ? _descCtrl.text : null,
+        // ── preserved (not editable on this screen) ──
+        logoUrl: org?.logoUrl,
+        category: org?.category,
+        phone: org?.phone,
+        address: org?.address,
+        website: org?.website,
+        socialLinks: org?.socialLinks
+            ?.map((k, v) => MapEntry(k, v?.toString() ?? '')),
+        // ── payment (editable) ──
         paymentProvider: _payProvider,
         paymentPhone:
             _payPhoneCtrl.text.trim().isNotEmpty ? _payPhoneCtrl.text.trim() : null,
         paymentAccountName:
             _payNameCtrl.text.trim().isNotEmpty ? _payNameCtrl.text.trim() : null,
-        // logoFile: _pickedImage, // Pass down to handle MultiPart API calls if supported
       ),
     );
 
