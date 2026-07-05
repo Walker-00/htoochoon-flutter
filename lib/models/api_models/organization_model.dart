@@ -16,6 +16,11 @@ class OrganizationRequest {
   final String? website;
   final Map<String, String>? socialLinks;
 
+  // 💳 Payment account the org receives enrollment payments on.
+  final String? paymentPhone;
+  final String? paymentProvider;
+  final String? paymentAccountName;
+
   OrganizationRequest({
     required this.name,
     required this.email,
@@ -26,6 +31,9 @@ class OrganizationRequest {
     this.address,
     this.website,
     this.socialLinks,
+    this.paymentPhone,
+    this.paymentProvider,
+    this.paymentAccountName,
   });
 
   factory OrganizationRequest.fromJson(Map<String, dynamic> json) =>
@@ -38,7 +46,31 @@ class OrganizationRequest {
 class OrgResForProgramResponse {
   final String name;
   final String? id;
-  OrgResForProgramResponse({required this.name, this.id});
+  final String? description;
+  final String? logoUrl;
+  final String? category;
+  final String? email;
+  final String? phone;
+  final String? website;
+
+  // 💳 Where the org receives enrollment payments (fake payment flow).
+  final String? paymentPhone;
+  final String? paymentProvider;
+  final String? paymentAccountName;
+
+  OrgResForProgramResponse({
+    required this.name,
+    this.id,
+    this.description,
+    this.logoUrl,
+    this.category,
+    this.email,
+    this.phone,
+    this.website,
+    this.paymentPhone,
+    this.paymentProvider,
+    this.paymentAccountName,
+  });
   factory OrgResForProgramResponse.fromJson(Map<String, dynamic> json) =>
       _$OrgResForProgramResponseFromJson(json);
 
@@ -62,6 +94,11 @@ class OrganizationResponse {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // 💳 Where the org receives enrollment payments (fake payment flow).
+  final String? paymentPhone;
+  final String? paymentProvider;
+  final String? paymentAccountName;
+
   OrganizationResponse({
     required this.id,
     required this.name,
@@ -76,6 +113,9 @@ class OrganizationResponse {
     this.ownerId,
     required this.createdAt,
     required this.updatedAt,
+    this.paymentPhone,
+    this.paymentProvider,
+    this.paymentAccountName,
   });
 
   factory OrganizationResponse.fromJson(Map<String, dynamic> json) =>

@@ -10,6 +10,7 @@ import 'package:htoochoon_flutter/Providers/theme_provider.dart';
 import 'package:htoochoon_flutter/Screens/AdminScreens/admin_shell.dart';
 import 'package:htoochoon_flutter/Screens/Onboarding/org_loader_screen.dart';
 import 'package:htoochoon_flutter/Screens/Profile/personal_info_screen.dart';
+import 'package:htoochoon_flutter/Screens/Profile/payment_account_screen.dart';
 import 'package:htoochoon_flutter/Screens/Profile/privacy_security_screen.dart';
 import 'package:htoochoon_flutter/Screens/TeacherScreens/teacher_shell.dart';
 import 'package:htoochoon_flutter/utils/avatar_util.dart';
@@ -316,6 +317,16 @@ class _AccountLinksCard extends StatelessWidget {
             subtitle: 'Photo, name and email',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const PersonalInfoScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          _AccountLinkTile(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Payment account',
+            subtitle: 'Phone number you pay from',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PaymentAccountScreen()),
             ),
           ),
           const SizedBox(height: 12),

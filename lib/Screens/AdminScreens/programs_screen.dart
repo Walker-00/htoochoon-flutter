@@ -95,7 +95,9 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
   ) async {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
     ProgramType selectedType = ProgramType.BOOTCAMP;
+    ProgramPricingType pricingType = ProgramPricingType.FREE;
     DateTime? startDate;
     DateTime? endDate;
 
@@ -162,6 +164,45 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                     onChanged: (v) => setS(() => selectedType = v!),
                   ),
                   const SizedBox(height: 12),
+                  // ── 💳 Pricing ──
+                  DropdownButtonFormField<ProgramPricingType>(
+                    initialValue: pricingType,
+                    decoration: const InputDecoration(
+                      labelText: 'Pricing',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: ProgramPricingType.FREE,
+                        child: Text('Free'),
+                      ),
+                      DropdownMenuItem(
+                        value: ProgramPricingType.MONTHLY,
+                        child: Text('Monthly subscription'),
+                      ),
+                      DropdownMenuItem(
+                        value: ProgramPricingType.ONE_TIME,
+                        child: Text('One-time payment'),
+                      ),
+                    ],
+                    onChanged: (v) => setS(() => pricingType = v!),
+                  ),
+                  if (pricingType != ProgramPricingType.FREE) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: priceCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: pricingType == ProgramPricingType.MONTHLY
+                            ? 'Price per month'
+                            : 'One-time price',
+                        prefixIcon: const Icon(Icons.attach_money_rounded),
+                        suffixText: 'MMK',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -209,6 +250,15 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                     ));
                     return;
                   }
+                  final int price = pricingType == ProgramPricingType.FREE
+                      ? 0
+                      : (int.tryParse(priceCtrl.text.trim()) ?? 0);
+                  if (pricingType != ProgramPricingType.FREE && price <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Enter a price for a paid program.'),
+                    ));
+                    return;
+                  }
                   Navigator.pop(ctx);
                   await prov.createProgram(
                     ProgramRequest(
@@ -219,6 +269,9 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                       type: selectedType,
                       startDate: startDate!,
                       endDate: endDate!,
+                      pricingType: pricingType,
+                      price: price,
+                      currency: 'MMK',
                     ),
                   );
                 },

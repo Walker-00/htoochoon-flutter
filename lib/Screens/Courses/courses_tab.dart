@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:htoochoon_flutter/Constants/app_colors.dart';
 import 'package:htoochoon_flutter/Live-Session/models/class_model.dart';
 import 'package:htoochoon_flutter/api/api_service.dart';
+import 'package:htoochoon_flutter/models/api_models/organization_model.dart';
+import 'package:htoochoon_flutter/Screens/Payment/fake_payment_sheet.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/courses_provider.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/organisation_provider.dart';
 import 'package:htoochoon_flutter/Providers/AdminProviders/programs_provider.dart';
@@ -489,9 +491,14 @@ class _RealProgramTileState extends State<_RealProgramTile> {
       return;
     }
 
+    // 💳 Paid program → fake payment first (real gateway TODO).
+    if (program.isPaid) {
+      final paid = await showFakePaymentSheet(context, program: program);
+      if (paid != true) return;
+      if (!mounted) return;
+    }
+
     setState(() => _enrolling = true);
-    // TODO(payment): for paid programs, collect payment via the in-app payment
-    // gateway here before creating the enrollment.
     // Member student self-enrolment defaults to PENDING; an admin approves it.
     final result = await enrollProv.enrollProgram(
       ProgramEnrollmentRequest(
@@ -1796,6 +1803,19 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // 💳 Pricing
+                  _PricingPill(program: program),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // 🏢 Organization info
+                  if (program.organization != null)
+                    _OrgInfoCard(org: program.organization!),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // 📊 Program analysis / counts
+                  _ProgramAnalysisRow(program: program, courses: courses),
                   const SizedBox(height: AppTheme.spaceLg),
 
                   // Description — guard empty and the literal "null" string a
@@ -2014,6 +2034,16 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                                     return;
                                   }
 
+                                  // 💳 Paid program → fake payment first.
+                                  if (isProgramType && program.isPaid) {
+                                    final paid = await showFakePaymentSheet(
+                                      context,
+                                      program: program,
+                                    );
+                                    if (paid != true) return;
+                                    if (!context.mounted) return;
+                                  }
+
                                   // 3. Conditional Content & Target Verification
                                   dynamic result;
 
@@ -2192,6 +2222,12 @@ class _ProgramCourseListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final secondary = AppTheme.getTextSecondary(context);
+    final teacher = course.teacher;
+    final hasMeta = (course.category != null &&
+            course.category!.trim().isNotEmpty) ||
+        course.topics.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spaceSm),
       padding: const EdgeInsets.all(AppTheme.spaceMd),
@@ -2200,43 +2236,299 @@ class _ProgramCourseListTile extends StatelessWidget {
         borderRadius: AppTheme.borderRadiusMd,
         border: Border.all(color: AppTheme.getBorder(context)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.1),
-              borderRadius: AppTheme.borderRadiusSm,
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.1),
+                  borderRadius: AppTheme.borderRadiusSm,
+                ),
+                child: Icon(Icons.book_rounded, size: 18, color: cs.primary),
+              ),
+              const SizedBox(width: AppTheme.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      course.name,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    // 👨‍🏫 Teacher line
+                    Row(
+                      children: [
+                        Icon(Icons.person_rounded, size: 13, color: secondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            teacher?.name != null &&
+                                    teacher!.name!.trim().isNotEmpty
+                                ? teacher.name!
+                                : 'Teacher to be assigned',
+                            style: TextStyle(fontSize: 12, color: secondary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (course.type != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.08),
+                    borderRadius: AppTheme.borderRadiusSm,
+                  ),
+                  child: Text(
+                    course.type!.name,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: cs.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          // 🏷️ Category + topics chips
+          if (hasMeta) ...[
+            const SizedBox(height: AppTheme.spaceSm),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (course.category != null &&
+                    course.category!.trim().isNotEmpty)
+                  _chip(context, course.category!, cs.tertiary, filled: true),
+                ...course.topics.map((t) => _chip(context, t, secondary)),
+              ],
             ),
-            child: Icon(Icons.book_rounded, size: 18, color: cs.primary),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, String label, Color color,
+      {bool filled = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: filled
+            ? color.withValues(alpha: 0.14)
+            : Theme.of(context).colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: filled ? FontWeight.w700 : FontWeight.w500,
+          color: filled ? color : AppTheme.getTextSecondary(context),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 💳 Pricing pill (program detail) ──────────────────────
+class _PricingPill extends StatelessWidget {
+  final ProgramResponse program;
+  const _PricingPill({required this.program});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final paid = program.isPaid;
+    final color = paid ? cs.tertiary : Colors.green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            paid
+                ? (program.pricingType == ProgramPricingType.MONTHLY
+                    ? Icons.autorenew_rounded
+                    : Icons.payments_rounded)
+                : Icons.volunteer_activism_rounded,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            program.priceLabel,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          if (paid && program.pricingType == ProgramPricingType.ONE_TIME) ...[
+            const SizedBox(width: 6),
+            Text('· one-time',
+                style: TextStyle(
+                    fontSize: 11, color: AppTheme.getTextSecondary(context))),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── 🏢 Organization info card (program detail) ─────────────
+class _OrgInfoCard extends StatelessWidget {
+  final OrgResForProgramResponse org;
+  const _OrgInfoCard({required this.org});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final secondary = AppTheme.getTextSecondary(context);
+    final logo = org.logoUrl;
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spaceMd),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: AppTheme.borderRadiusMd,
+        border: Border.all(color: AppTheme.getBorder(context)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: cs.primary.withValues(alpha: 0.12),
+            foregroundImage: (logo != null && logo.startsWith('http'))
+                ? NetworkImage(logo)
+                : null,
+            child: Icon(Icons.apartment_rounded, color: cs.primary, size: 22),
           ),
           const SizedBox(width: AppTheme.spaceMd),
           Expanded(
-            child: Text(
-              course.name,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(org.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 15),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    if (org.category != null &&
+                        org.category!.trim().isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: cs.tertiary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(org.category!,
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: cs.tertiary)),
+                      ),
+                    ],
+                  ],
+                ),
+                if (org.description != null &&
+                    org.description!.trim().isNotEmpty &&
+                    org.description!.trim().toLowerCase() != 'null') ...[
+                  const SizedBox(height: 4),
+                  Text(org.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: secondary)),
+                ],
+                if (org.phone != null && org.phone!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Icon(Icons.phone_rounded, size: 12, color: secondary),
+                    const SizedBox(width: 4),
+                    Text(org.phone!,
+                        style: TextStyle(fontSize: 12, color: secondary)),
+                  ]),
+                ],
+              ],
             ),
           ),
-          if (course.type != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.08),
-                borderRadius: AppTheme.borderRadiusSm,
-              ),
-              child: Text(
-                course.type!.name,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                ),
-              ),
-            ),
         ],
+      ),
+    );
+  }
+}
+
+// ── 📊 Program analysis / counts (program detail) ──────────
+class _ProgramAnalysisRow extends StatelessWidget {
+  final ProgramResponse program;
+  final List<CourseResponseForProgram> courses;
+  const _ProgramAnalysisRow({required this.program, required this.courses});
+
+  @override
+  Widget build(BuildContext context) {
+    final enrolled = program.count?.enrollments ?? 0;
+    final materials = courses.fold<int>(
+        0, (sum, c) => sum + (c.count?.materials ?? 0));
+    final teachers = courses
+        .map((c) => c.teacher?.id)
+        .whereType<String>()
+        .toSet()
+        .length;
+    return Row(
+      children: [
+        _stat(context, Icons.menu_book_rounded, '${courses.length}', 'Courses'),
+        _stat(context, Icons.people_alt_rounded, '$enrolled', 'Enrolled'),
+        _stat(context, Icons.badge_rounded, '$teachers', 'Teachers'),
+        _stat(context, Icons.folder_rounded, '$materials', 'Materials'),
+      ],
+    );
+  }
+
+  Widget _stat(
+      BuildContext context, IconData icon, String value, String label) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: AppTheme.borderRadiusMd,
+          border: Border.all(color: AppTheme.getBorder(context)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 18, color: cs.primary),
+            const SizedBox(height: 4),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w800)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.getTextSecondary(context))),
+          ],
+        ),
       ),
     );
   }

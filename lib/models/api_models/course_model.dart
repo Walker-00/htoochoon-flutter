@@ -49,11 +49,65 @@ class CourseResponseForProgram {
   final String id;
   final String name;
   final CourseType? type;
-  CourseResponseForProgram({required this.id, required this.name, this.type});
+  final String? description;
+
+  /// Subject / catalog metadata surfaced on the program detail page.
+  final String? category;
+  @JsonKey(defaultValue: [])
+  final List<String> topics;
+
+  /// Teacher assigned to this (program) course, if any.
+  final TeacherBrief? teacher;
+
+  @JsonKey(name: '_count')
+  final CourseForProgramCount? count;
+
+  CourseResponseForProgram({
+    required this.id,
+    required this.name,
+    this.type,
+    this.description,
+    this.category,
+    this.topics = const [],
+    this.teacher,
+    this.count,
+  });
   factory CourseResponseForProgram.fromJson(Map<String, dynamic> json) =>
       _$CourseResponseForProgramFromJson(json);
 
   Map<String, dynamic> toJson() => _$CourseResponseForProgramToJson(this);
+}
+
+/// Minimal teacher info for program/course cards.
+@JsonSerializable()
+class TeacherBrief {
+  final String id;
+  final String? name;
+  final String? email;
+  final String? avatar;
+  TeacherBrief({required this.id, this.name, this.email, this.avatar});
+  factory TeacherBrief.fromJson(Map<String, dynamic> json) =>
+      _$TeacherBriefFromJson(json);
+  Map<String, dynamic> toJson() => _$TeacherBriefToJson(this);
+
+  /// Full avatar URL (backend serves relative paths).
+  String? get absoluteAvatarUrl {
+    if (avatar == null || avatar!.isEmpty) return null;
+    if (avatar!.startsWith('http')) return avatar;
+    return 'https://backend.htoochoon.com$avatar';
+  }
+}
+
+@JsonSerializable()
+class CourseForProgramCount {
+  @JsonKey(defaultValue: 0)
+  final int enrollments;
+  @JsonKey(defaultValue: 0)
+  final int materials;
+  CourseForProgramCount({this.enrollments = 0, this.materials = 0});
+  factory CourseForProgramCount.fromJson(Map<String, dynamic> json) =>
+      _$CourseForProgramCountFromJson(json);
+  Map<String, dynamic> toJson() => _$CourseForProgramCountToJson(this);
 }
 
 @JsonSerializable()

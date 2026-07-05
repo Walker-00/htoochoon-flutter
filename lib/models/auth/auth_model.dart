@@ -175,6 +175,12 @@ class User {
   @JsonKey(includeIfNull: false)
   final String? intendedRole;
 
+  // 💳 Payment account the student pays FROM (mobile-money phone + provider).
+  @JsonKey(includeIfNull: false)
+  final String? paymentPhone;
+  @JsonKey(includeIfNull: false)
+  final String? paymentProvider;
+
   User({
     required this.id,
     required this.email,
@@ -193,6 +199,8 @@ class User {
     this.interests,
     this.heardFrom,
     this.intendedRole,
+    this.paymentPhone,
+    this.paymentProvider,
   });
   String? get absoluteAvatarUrl {
     if (avatar == null || avatar!.isEmpty) return null;

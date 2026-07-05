@@ -32,6 +32,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _emailCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
 
+  // 💳 Payment (receive) account
+  final _payPhoneCtrl = TextEditingController();
+  final _payNameCtrl = TextEditingController();
+  String? _payProvider;
+  static const _providers = ['KBZPay', 'WavePay', 'AYAPay', 'CBPay', 'Other'];
+
   bool _edited = false;
   File? _pickedImage; // 🖼️ Tracks local picked image state
   String? _currentLogoUrl; // Tracks the background cached image path string
@@ -48,6 +54,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _nameCtrl.text = org.name;
         _emailCtrl.text = org.email;
         _descCtrl.text = org.description ?? '';
+        _payPhoneCtrl.text = org.paymentPhone ?? '';
+        _payNameCtrl.text = org.paymentAccountName ?? '';
+        _payProvider = (org.paymentProvider != null &&
+                _providers.contains(org.paymentProvider))
+            ? org.paymentProvider
+            : (org.paymentProvider != null && org.paymentProvider!.isNotEmpty
+                ? 'Other'
+                : null);
 
         // 🛠️ COMBINE BASE DOMAIN + LOGO PATH URL
         if (org.logoUrl != null && org.logoUrl!.isNotEmpty) {
@@ -259,6 +273,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   const SizedBox(height: 28),
 
+                  // ── 💳 Payment (receive) account ──────────
+                  _SectionHeader(label: 'Payment Account (Receive)'),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, left: 4),
+                    child: Text(
+                      'Students pay enrollment fees to this mobile-money account.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                  _SettingsCard(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _payProvider,
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Provider',
+                              icon: Icon(Icons.account_balance_wallet_rounded),
+                              border: InputBorder.none,
+                            ),
+                            items: _providers
+                                .map((p) => DropdownMenuItem(
+                                    value: p, child: Text(p)))
+                                .toList(),
+                            onChanged: (v) => setState(() {
+                              _payProvider = v;
+                              _edited = true;
+                            }),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _Field(
+                          controller: _payPhoneCtrl,
+                          label: 'Payment phone (e.g. 09xxxxxxxxx)',
+                          icon: Icons.phone_rounded,
+                          keyboardType: TextInputType.phone,
+                          onChanged: (_) => setState(() => _edited = true),
+                        ),
+                        const Divider(height: 1),
+                        _Field(
+                          controller: _payNameCtrl,
+                          label: 'Account holder name',
+                          icon: Icons.badge_rounded,
+                          onChanged: (_) => setState(() => _edited = true),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
                   // ── Resource usage (moved here from the home Overview) ──
                   _SectionHeader(label: 'Resource Usage'),
                   const SizedBox(height: 12),
@@ -359,6 +430,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         name: _nameCtrl.text,
         email: _emailCtrl.text,
         description: _descCtrl.text.isNotEmpty ? _descCtrl.text : null,
+        paymentProvider: _payProvider,
+        paymentPhone:
+            _payPhoneCtrl.text.trim().isNotEmpty ? _payPhoneCtrl.text.trim() : null,
+        paymentAccountName:
+            _payNameCtrl.text.trim().isNotEmpty ? _payNameCtrl.text.trim() : null,
         // logoFile: _pickedImage, // Pass down to handle MultiPart API calls if supported
       ),
     );

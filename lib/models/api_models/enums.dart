@@ -44,6 +44,11 @@ enum OtpType { VERIFY_EMAIL, RESET_PASSWORD, TWO_FACTOR_SETUP }
 @JsonEnum(alwaysCreate: true)
 enum ProgramType { DEGREE, CERTIFICATION, BOOTCAMP }
 
+/// How a program is billed. FREE = no charge; MONTHLY = recurring subscription;
+/// ONE_TIME = single up-front payment. (Fake payment flow for now.)
+@JsonEnum(alwaysCreate: true)
+enum ProgramPricingType { FREE, MONTHLY, ONE_TIME }
+
 @JsonEnum(alwaysCreate: true)
 enum CourseType { SKILL, ACADEMIC, TEST_PREP }
 
