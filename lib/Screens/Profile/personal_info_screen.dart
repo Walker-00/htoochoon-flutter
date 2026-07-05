@@ -35,7 +35,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
     setState(() => _saving = true);
     try {
-      await auth.updateUser(user.id, {'fullName': name});
+      await auth.updateUser(user.id, {'name': name});
       if (!mounted) return;
       _snack('Profile updated');
     } catch (_) {

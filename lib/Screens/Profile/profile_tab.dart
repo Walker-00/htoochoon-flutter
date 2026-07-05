@@ -561,7 +561,7 @@ class _ProfileCardState extends State<_ProfileCard> {
             onPressed: () async {
               Navigator.pop(context);
               await context.read<AuthProvider>().updateUser(user.id, {
-                'fullName': nameCtrl.text,
+                'name': nameCtrl.text.trim(),
               });
             },
             child: const Text('Save', style: TextStyle(color: Colors.white)),
