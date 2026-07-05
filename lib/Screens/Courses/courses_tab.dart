@@ -63,7 +63,10 @@ class _CoursesTabState extends State<CoursesTab> {
       // Make sure our baseline enrollment maps remain freshly synchronized
       final userId = UserSessionManager.userId;
       if (userId != null) {
-        context.read<EnrollmentProvider>().fetchCurrentUserEnrollments(userId);
+        final enrollProv = context.read<EnrollmentProvider>();
+        enrollProv.fetchCurrentUserEnrollments(userId);
+        // Pull open access requests so "Enrollment requested" persists.
+        enrollProv.fetchMyAccessRequests();
       }
     });
 
@@ -445,7 +448,6 @@ class _RealProgramTile extends StatefulWidget {
 
 class _RealProgramTileState extends State<_RealProgramTile> {
   bool _enrolling = false;
-  bool _requested = false;
 
   ProgramResponse get program => widget.program;
 
@@ -529,16 +531,20 @@ class _RealProgramTileState extends State<_RealProgramTile> {
         'message': 'Requesting to enrol in ${program.name}',
       });
       if (!mounted) return;
-      setState(() {
-        _enrolling = false;
-        _requested = true;
-      });
+      setState(() => _enrolling = false);
+      // Persist the "requested" state via the provider so it survives rebuilds
+      // and app restarts (not a lost local bool).
+      context
+          .read<EnrollmentProvider>()
+          .markRequested(programId: program.id, orgId: orgId);
       _snack('Request sent — an admin will review your enrollment.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _enrolling = false);
       if (e.toString().toLowerCase().contains('already')) {
-        setState(() => _requested = true);
+        context
+            .read<EnrollmentProvider>()
+            .markRequested(programId: program.id, orgId: orgId);
         _snack('You have already requested to join.');
       } else {
         _snack('Could not send request. Please try again.');
@@ -720,8 +726,11 @@ class _RealProgramTileState extends State<_RealProgramTile> {
       );
     }
 
-    // Non-member who already fired off an access request.
-    if (_requested) {
+    // Non-member who already fired off an access request (provider-backed so it
+    // survives rebuilds / restarts).
+    final requested = enrollProv.hasPendingProgramRequest(program.id) ||
+        (orgId != null && enrollProv.hasPendingOrgRequest(orgId));
+    if (requested) {
       return Row(
         children: [
           Icon(Icons.hourglass_top_rounded,
@@ -1659,7 +1668,15 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (!mounted) return;
       context.read<StructureProvider>().getProgramDetailById(widget.program.id);
+      final enrollProv = context.read<EnrollmentProvider>();
+      final userId = UserSessionManager.userId;
+      if (userId != null) {
+        enrollProv.fetchCurrentUserEnrollments(userId);
+      }
+      // So the button can render "Enrollment requested" if one is already open.
+      enrollProv.fetchMyAccessRequests();
     });
   }
 
@@ -1781,8 +1798,11 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                   ),
                   const SizedBox(height: AppTheme.spaceLg),
 
-                  // Description
-                  if (program.description != null) ...[
+                  // Description — guard empty and the literal "null" string a
+                  // backend sometimes serialises for a missing value.
+                  if (program.description != null &&
+                      program.description!.trim().isNotEmpty &&
+                      program.description!.trim().toLowerCase() != 'null') ...[
                     Text(
                       'About this program',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1825,6 +1845,52 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                         // 💡 Determine if the context object is a Program or a Course
                         // (Adjust this check based on how your 'program' or 'course' model is named/typed)
                         final isProgramType = program.programCourses != null;
+
+                        // Already enrolled, or already sent an access request?
+                        // Show a non-actionable status chip instead of the button
+                        // so it doesn't keep saying "Enroll Now" after a request.
+                        final orgIdChip = program.organization?.id;
+                        final alreadyEnrolled = enrollProv.myProgramEnrollments
+                            .any((e) =>
+                                e.programId == program.id && e.id != 'NONE');
+                        final alreadyRequested =
+                            enrollProv.hasPendingProgramRequest(program.id) ||
+                                (orgIdChip != null &&
+                                    enrollProv.hasPendingOrgRequest(orgIdChip));
+                        if (alreadyEnrolled || alreadyRequested) {
+                          final cs2 = Theme.of(context).colorScheme;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppTheme.spaceMd),
+                            decoration: BoxDecoration(
+                              color: cs2.primary.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  alreadyEnrolled
+                                      ? Icons.check_circle_rounded
+                                      : Icons.hourglass_top_rounded,
+                                  size: 18,
+                                  color: cs2.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  alreadyEnrolled
+                                      ? 'Enrolled'
+                                      : 'Enrollment requested',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: cs2.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
 
                         return FilledButton(
                           onPressed: enrollProv.isLoading
@@ -1910,6 +1976,13 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                                             : 'Requesting access to enrol',
                                       });
                                       if (!context.mounted) return;
+                                      // Persist so the button flips to
+                                      // "Enrollment requested" and stays that way.
+                                      enrollProv.markRequested(
+                                        programId:
+                                            isProgramType ? program.id : null,
+                                        orgId: orgId,
+                                      );
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
@@ -1923,6 +1996,13 @@ class _ProgramIntroScreenState extends State<ProgramIntroScreen> {
                                           .toString()
                                           .toLowerCase()
                                           .contains('already');
+                                      if (already) {
+                                        enrollProv.markRequested(
+                                          programId:
+                                              isProgramType ? program.id : null,
+                                          orgId: orgId,
+                                        );
+                                      }
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(already

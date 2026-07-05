@@ -33,6 +33,12 @@ class EnrollmentProvider extends ChangeNotifier {
   // Org-wide pending/approval list (enrollment_tab).
   List<Enrollment> _programEnrollments = [];
 
+  // Programs/orgs the current user has an OPEN (PENDING) access request for.
+  // Loaded from /access-requests/mine so the "Enrollment requested" state
+  // survives rebuilds and app restarts (was previously a lost local bool).
+  final Set<String> _pendingReqProgramIds = {};
+  final Set<String> _pendingReqOrgIds = {};
+
   // ── Getters ───────────────────────────────────────────────────────────────
   bool get isLoading => _isLoading;
   bool get isFetchingMore => _isFetchingMore;
@@ -49,6 +55,14 @@ class EnrollmentProvider extends ChangeNotifier {
   List<Enrollment> get programSpecificEnrollments =>
       _programSpecificEnrollments;
   List<Enrollment> get programEnrollments => _programEnrollments;
+
+  /// True if the user has an open access request tagged with [programId].
+  bool hasPendingProgramRequest(String programId) =>
+      _pendingReqProgramIds.contains(programId);
+
+  /// True if the user has an open org-join access request (no specific program).
+  bool hasPendingOrgRequest(String orgId) =>
+      _pendingReqOrgIds.contains(orgId);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   void _setLoading(bool v) {
@@ -90,6 +104,46 @@ class EnrollmentProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  // ── Current user's OPEN access requests ──────────────────────────────────────
+  /// Populates [_pendingReqProgramIds] / [_pendingReqOrgIds] from
+  /// /access-requests/mine so enroll buttons can render the "requested" state
+  /// after a rebuild or restart. Best-effort — failure just leaves the sets as-is.
+  Future<void> fetchMyAccessRequests() async {
+    try {
+      final res = await _api.myAccessRequests();
+      final list = (res as List?) ?? const [];
+      _pendingReqProgramIds.clear();
+      _pendingReqOrgIds.clear();
+      for (final raw in list) {
+        if (raw is! Map) continue;
+        final m = Map<String, dynamic>.from(raw);
+        final status = (m['status']?.toString() ?? '').toUpperCase();
+        if (status != 'PENDING') continue;
+        final pid = m['programId']?.toString();
+        final oid = m['organizationId']?.toString();
+        if (pid != null && pid.isNotEmpty) {
+          _pendingReqProgramIds.add(pid);
+        } else if (oid != null && oid.isNotEmpty) {
+          _pendingReqOrgIds.add(oid);
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error fetching my access requests: $e");
+    }
+  }
+
+  /// Optimistically mark a just-sent access request so the UI flips to the
+  /// "requested" state immediately, before the next /mine refresh.
+  void markRequested({String? programId, String? orgId}) {
+    if (programId != null && programId.isNotEmpty) {
+      _pendingReqProgramIds.add(programId);
+    } else if (orgId != null && orgId.isNotEmpty) {
+      _pendingReqOrgIds.add(orgId);
+    }
+    notifyListeners();
   }
 
   // ── Org-wide program enrollments (e.g. pending approvals) ──────────────────────
