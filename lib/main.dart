@@ -187,6 +187,7 @@ void main(List<String> args) async {
       final response = await refreshDio.post(
         "/auth/refresh",
         options: Options(headers: {"X-Refresh-Token": refreshToken}),
+        // rust reads snake_case; this Dio has no case-converting interceptor.
         data: {"refreshToken": refreshToken, "userId": userId},
       );
 
@@ -221,12 +222,11 @@ void main(List<String> args) async {
       onRequest: (options, handler) async {
         final accessToken = await tokenManager.getToken();
 
-        logD("🌍 URL:   ${options.uri}");
-        // logD(
-        //   "🔑 ACCESS TOKEN: ${accessToken?.isNotEmpty == true ? '***' + accessToken!.substring(accessToken.length - 4) : 'NULL'}",
-        // );
-        logD("🔑 ACCESS TOKEN: $accessToken ");
-        logD("📦 BODY:  ${options.data}");
+        logI("→ ${options.method} ${options.uri}");
+        logD(
+          "🔑 token: ${accessToken?.isNotEmpty == true ? '***${accessToken!.substring(accessToken.length - 6)}' : 'NONE'}",
+        );
+        if (options.data != null) logD("📦 req body: ${options.data}");
 
         // ✅ Only add Authorization header for access token
         if (accessToken != null && accessToken.isNotEmpty) {
@@ -237,9 +237,8 @@ void main(List<String> args) async {
       },
 
       onResponse: (response, handler) {
-        logD(
-          "✅ RESPONSE [${response.statusCode}]: ${response.requestOptions.uri}",
-        );
+        logI("← ${response.statusCode} ${response.requestOptions.uri}");
+        logD("📥 res body: ${response.data}");
         return handler.next(response);
       },
 
@@ -247,19 +246,25 @@ void main(List<String> args) async {
         final path = error.requestOptions.path;
 
         if (path.contains('/auth/refresh')) {
+          logW("✗ refresh failed [${error.response?.statusCode}] ${error.requestOptions.uri}");
           return handler.next(error);
         }
 
-        logD(
-          "❌ ERROR [${error.response?.statusCode}]: ${error.requestOptions.uri}",
+        logE(
+          "✗ ${error.response?.statusCode ?? error.type} ${error.requestOptions.method} ${error.requestOptions.uri} :: ${error.message} :: body=${error.response?.data}",
+          error,
+          error.stackTrace,
         );
 
         if (error.response?.statusCode == 401 && !tokenManager.isRefreshing) {
-          // Get userId from AuthProvider
-          // final authProvider = Provider.of<AuthProvider>(
-          //   navigatorKey.currentContext!,
-          //   listen: false,
-          // );
+          // HARD GUARD: no stored access token = we're on the login screen (or
+          // truly logged out). A stray 401 from a background/heartbeat request
+          // must NOT trigger refresh-then-push, which rebuilds the login screen
+          // and wipes the email/password the user is typing. Bail immediately.
+          final existingToken = await tokenManager.getToken();
+          if (existingToken == null || existingToken.isEmpty) {
+            return handler.next(error);
+          }
 
           final userId = UserSessionManager.userId;
 

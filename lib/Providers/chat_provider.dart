@@ -87,9 +87,8 @@ class ChatProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
-    // Make sure the shared socket is up (idempotent). Don't trust connect()'s
-    // return code — it can be `false` purely because the socket was already up
-    // or mid-reconnect. Reconcile to the real engine state afterward.
+    // Bring the dedicated rust chat socket up. Reconcile to the real engine
+    // state afterward (send falls back to REST when it's down).
     try {
       await socket.connect();
     } catch (_) {/* ignore — reconcile below */}

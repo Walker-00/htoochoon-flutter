@@ -21,22 +21,22 @@ class AppLog {
   final String name;
   const AppLog(this.name);
 
-  void d(Object? msg) {
-    if (!kReleaseMode) _emit(500, msg);
-  }
-
-  void i(Object? msg) {
-    if (!kReleaseMode) _emit(800, msg);
-  }
-
+  // All levels emit (verbose by request). Each also mirrors to the console via
+  // print() so logs are visible in `flutter run` / device logs, not just DevTools.
+  void d(Object? msg) => _emit('D', 500, msg);
+  void i(Object? msg) => _emit('I', 800, msg);
   void w(Object? msg, [Object? error, StackTrace? stack]) =>
-      _emit(900, msg, error, stack);
-
+      _emit('W', 900, msg, error, stack);
   void e(Object? msg, [Object? error, StackTrace? stack]) =>
-      _emit(1000, msg, error, stack);
+      _emit('E', 1000, msg, error, stack);
 
-  void _emit(int level, Object? msg, [Object? error, StackTrace? stack]) {
+  void _emit(String tag, int level, Object? msg,
+      [Object? error, StackTrace? stack]) {
     dev.log('$msg', name: name, level: level, error: error, stackTrace: stack);
+    // Console mirror (debugPrint is rate-limit-safe for long lines).
+    debugPrint('[$tag/$name] $msg');
+    if (error != null) debugPrint('[$tag/$name] error: $error');
+    if (stack != null) debugPrint('[$tag/$name] stack: $stack');
   }
 }
 

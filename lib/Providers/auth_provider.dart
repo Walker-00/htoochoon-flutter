@@ -251,13 +251,14 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
+      logI("requestOtp -> action=${request.action} email=${request.email}");
       final response = await apiService.requestOtp(request);
       _isLoading = false;
       notifyListeners();
-      logD("OTP requested successfully");
+      logI("requestOtp OK");
       return response;
-    } catch (e) {
-      debugPrint("Request OTP Error: $e");
+    } catch (e, s) {
+      logE("requestOtp failed", e, s);
       rethrow;
     } finally {
       _isLoading = false;
@@ -421,18 +422,23 @@ class AuthProvider extends ChangeNotifier {
 
       _user = loginResponse.data;
       _userId = loginResponse.data.id;
-
       _status = AuthStatus.authenticated;
-      final userInfo = await apiService.getUser(
-        loginResponse.data.id.toString(),
-      );
-      _user = userInfo;
-      _userId = userInfo.id;
-      UserSessionManager.setUser(userInfo);
+      UserSessionManager.setUser(loginResponse.data);
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("user_id", userInfo.id);
-      await saveUserToPrefs(userInfo, accessToken: _accessToken);
+      // Login already succeeded (tokens saved). Enriching the profile via
+      // getUser() must NOT be able to fail the whole sign-in — swallow its error.
+      try {
+        final userInfo = await apiService.getUser(loginResponse.data.id.toString());
+        _user = userInfo;
+        _userId = userInfo.id;
+        UserSessionManager.setUser(userInfo);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("user_id", userInfo.id);
+        await saveUserToPrefs(userInfo, accessToken: _accessToken);
+      } catch (e, s) {
+        logW("post-login getUser() failed (non-fatal, using login user)", e, s);
+        await saveUserToPrefs(loginResponse.data, accessToken: _accessToken);
+      }
       _status = AuthStatus.authenticated;
       _isLoading = false;
       notifyListeners();
@@ -441,7 +447,11 @@ class AuthProvider extends ChangeNotifier {
 
       logD("Auth Provider: login result is sucess");
       return LoginResult.success;
-    } catch (e) {
+    } catch (e, s) {
+      logE("login() failed", e, s);
+      if (e is DioException) {
+        logE("login DioException status=${e.response?.statusCode} type=${e.type} body=${e.response?.data}");
+      }
       _authError = _friendlyError(e, isRegister: false);
       if (e is DioException) {
         final data = e.response?.data;
