@@ -1,4 +1,5 @@
 import 'package:htoochoon_flutter/core/log/app_logger.dart';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -1234,27 +1235,49 @@ void _confirmDelete(
   );
 }
 
-void _showLimitDialog(BuildContext context, e) {
+/// Pulls the human-readable `message` out of a backend error payload, falling
+/// back to the raw text when the error isn't a NestJS-shaped response.
+String _errorMessage(Object e) {
+  final raw = e.toString();
+  final match = RegExp(r'"message"\s*:\s*("(?:[^"\\]|\\.)*"|\[[^\]]*\])')
+      .firstMatch(raw);
+  if (match == null) return raw;
+  try {
+    final decoded = jsonDecode(match.group(1)!);
+    if (decoded is List) return decoded.join('\n');
+    return decoded.toString();
+  } catch (_) {
+    return raw;
+  }
+}
+
+void _showLimitDialog(BuildContext context, Object e) {
+  final message = _errorMessage(e);
+  // Only the subscription cap gets the upgrade pitch; validation/duplicate/
+  // network failures are plain errors and must not be mislabelled.
+  final isLimit = message.toLowerCase().contains('limit reached');
+
   showDialog(
     context: context,
     builder: (_) => AlertDialog(
-      title: const Text('Plan Limit Reached'),
-      content: Text(e.toString()),
+      title: Text(isLimit ? 'Plan Limit Reached' : "Couldn't create organisation"),
+      content: Text(message),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Dismiss'),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
+        if (isLimit)
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Contact our Team to Upgrade',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Contact out Team to Upgrade',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
       ],
     ),
   );
